@@ -373,3 +373,12 @@ function renderSalesChart(trendData) {
 
 // Start application when DOM is ready
 window.addEventListener('DOMContentLoaded', bootstrap);
+
+// Clean up print container after print dialog closes
+window.addEventListener('afterprint', () => {
+  const printArea = document.getElementById('printable-receipt-area');
+  if (printArea) {
+    printArea.innerHTML = '';
+    printArea.className = '';
+  }
+});

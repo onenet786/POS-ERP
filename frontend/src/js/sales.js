@@ -272,7 +272,7 @@ function openInvoiceModal(inv) {
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" id="btn-close-inv">Close</button>
-          <button class="btn btn-primary" onclick="window.print()">🖨️ Print Invoice</button>
+          <button class="btn btn-primary" id="btn-print-sales-invoice">🖨️ Print Invoice</button>
         </div>
       </div>
     </div>
@@ -282,6 +282,99 @@ function openInvoiceModal(inv) {
   const modal = document.getElementById('einvoice-modal');
   document.getElementById('btn-close-inv-modal')?.addEventListener('click', () => modal.remove());
   document.getElementById('btn-close-inv')?.addEventListener('click', () => modal.remove());
+  document.getElementById('btn-print-sales-invoice')?.addEventListener('click', () => printSalesInvoice(inv));
+}
+
+function printSalesInvoice(inv) {
+  const printArea = document.getElementById('printable-receipt-area');
+  if (!printArea) {
+    console.warn('[Sales] #printable-receipt-area container not found in DOM.');
+    return;
+  }
+
+  printArea.className = 'a4-invoice';
+  printArea.innerHTML = `
+    <div style="width:100%; color:#0f172a; font-family:'Inter', system-ui, sans-serif;">
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; border-bottom:2px solid #0f172a; padding-bottom:12px; margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:22px; font-weight:800; color:#0284c7; margin:0;">OneNet Solutions</h2>
+          <div style="font-size:13px; font-weight:600; color:#1e293b;">ApexERP & POS Enterprise</div>
+          <div style="font-size:12px; color:#475569; margin-top:2px;">Muslim Town, Lahore, Pakistan</div>
+          <div style="font-size:12px; color:#475569;">Tel: +92 300 1234567 | NTN: 7492019-2 | STRN: 11-22-3344-555</div>
+        </div>
+        <div style="text-align:right;">
+          <h3 style="margin:0; font-size:18px; color:#0f172a; font-weight:800;">OFFICIAL TAX INVOICE</h3>
+          <div style="font-weight:bold; font-size:15px; margin-top:4px;">${inv.invoice_number}</div>
+          <div style="font-size:12px; color:#475569; margin-top:2px;">Date: ${inv.invoice_date || new Date().toISOString().slice(0, 10)}</div>
+          <div style="font-size:12px; color:#475569;">Status: <strong>${inv.status || 'PAID'}</strong></div>
+        </div>
+      </div>
+
+      <!-- Customer & QR Row -->
+      <div style="display:flex; justify-content:space-between; margin-bottom:18px; font-size:13px;">
+        <div style="max-width:60%;">
+          <div style="font-size:11px; text-transform:uppercase; color:#64748b; font-weight:700;">Billed To:</div>
+          <div style="font-size:15px; font-weight:bold; color:#0f172a; margin-top:2px;">${inv.customer_name || 'Valued Customer'}</div>
+          <div style="color:#475569; font-size:12px; margin-top:2px;">Payment Method: ${inv.payment_method || 'Cash / Credit'}</div>
+        </div>
+        <div style="text-align:center;">
+          <img src="${inv.einvoice_qr_code}" alt="E-Invoice QR" style="width:90px; height:90px; border:1px solid #cbd5e1; padding:3px;" />
+          <div style="font-size:9px; color:#64748b; margin-top:2px;">FBR/ZATCA Verified</div>
+        </div>
+      </div>
+
+      <!-- Line Items Table -->
+      <table style="width:100%; border-collapse:collapse; font-size:12px; margin-bottom:18px;">
+        <thead>
+          <tr style="background:#f1f5f9; border-bottom:2px solid #0f172a;">
+            <th style="padding:8px 10px; text-align:left;">Item & Description</th>
+            <th style="padding:8px 10px; text-align:center;">Qty</th>
+            <th style="padding:8px 10px; text-align:right;">Unit Price (Rs)</th>
+            <th style="padding:8px 10px; text-align:right;">Total Amount (Rs)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(inv.items || []).map(item => `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+              <td style="padding:8px 10px;">${item.name || item.product_name}</td>
+              <td style="padding:8px 10px; text-align:center;">${item.quantity}</td>
+              <td style="padding:8px 10px; text-align:right;">${Number(item.unit_price).toFixed(2)}</td>
+              <td style="padding:8px 10px; text-align:right; font-weight:600;">${(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <!-- Summary -->
+      <div style="display:flex; justify-content:flex-end; margin-bottom:24px;">
+        <div style="width:280px; font-size:13px;">
+          <div style="display:flex; justify-content:space-between; padding:3px 0;"><span>Subtotal:</span><span>Rs. ${Number(inv.subtotal).toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between; padding:3px 0;"><span>Sales Tax (18%):</span><span>Rs. ${Number(inv.tax_amount).toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between; padding:3px 0;"><span>Discount:</span><span>-Rs. ${Number(inv.discount_amount || 0).toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-top:2px solid #0f172a; font-weight:800; font-size:16px; color:#0284c7;">
+            <span>Grand Total:</span><span>Rs. ${Number(inv.total_amount).toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signature & Notes -->
+      <div style="display:flex; justify-content:space-between; margin-top:40px; padding-top:12px; border-top:1px solid #cbd5e1; font-size:11px; color:#475569;">
+        <div>
+          <div>Thank you for doing business with OneNet Solutions.</div>
+          <div style="margin-top:2px;">This is a computer-generated tax invoice. No signature required.</div>
+        </div>
+        <div style="text-align:center; min-width:180px;">
+          <div style="border-bottom:1px solid #94a3b8; height:24px;"></div>
+          <div style="margin-top:4px; font-weight:600;">Authorized Signatory</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    window.print();
+  }, 120);
 }
 
 function openCreateInvoiceModal() {

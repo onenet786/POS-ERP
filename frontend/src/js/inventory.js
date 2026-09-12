@@ -300,7 +300,7 @@ function openBarcodeLabelsModal() {
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" id="btn-dismiss-label">Close</button>
-          <button class="btn btn-primary" onclick="window.print()">🖨️ Print Label Sheet</button>
+          <button class="btn btn-primary" id="btn-print-labels">🖨️ Print Label Sheet</button>
         </div>
       </div>
     </div>
@@ -310,4 +310,25 @@ function openBarcodeLabelsModal() {
   const modal = document.getElementById('barcode-labels-modal');
   document.getElementById('btn-close-label-modal')?.addEventListener('click', () => modal.remove());
   document.getElementById('btn-dismiss-label')?.addEventListener('click', () => modal.remove());
+  document.getElementById('btn-print-labels')?.addEventListener('click', () => printBarcodeSheet(p));
+}
+
+function printBarcodeSheet(p) {
+  const printArea = document.getElementById('printable-receipt-area');
+  if (!printArea) return;
+
+  printArea.className = 'barcode-sheet-print';
+  printArea.innerHTML = Array.from({ length: 12 }).map(() => `
+    <div class="barcode-sticker" style="border:1px dashed #333; padding:8px; text-align:center; font-family:monospace; page-break-inside:avoid;">
+      <div style="font-weight:bold; font-size:11px;">OneNet Solutions</div>
+      <div style="font-size:10px; margin:2px 0;">${p.name.slice(0, 22)}</div>
+      <div style="font-weight:bold; font-size:18px; letter-spacing:3px; margin:4px 0;">||| | |||| | ||</div>
+      <div style="font-size:9px;">${p.barcode || 'N/A'}</div>
+      <div style="font-weight:bold; font-size:12px; margin-top:2px;">${formatCurrency(p.selling_price)}</div>
+    </div>
+  `).join('');
+
+  setTimeout(() => {
+    window.print();
+  }, 120);
 }

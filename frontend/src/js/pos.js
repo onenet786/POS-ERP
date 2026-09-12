@@ -83,9 +83,6 @@ export function renderPosView(container) {
         </div>
       </div>
     </div>
-
-    <!-- Hidden Printable Area for Direct Thermal Print -->
-    <div id="printable-receipt-area" style="display:none;"></div>
   `;
 
   renderProductGrid('all');
@@ -454,97 +451,95 @@ function openPaymentModal() {
 // Direct 80mm/58mm Thermal Print Slip Generator
 function printThermalReceipt(transaction) {
   const printArea = document.getElementById('printable-receipt-area');
-  if (!printArea) return;
+  if (!printArea) {
+    console.warn('[POS] #printable-receipt-area container not found in DOM.');
+    return;
+  }
 
-  const now = new Date(transaction.created_at).toLocaleString('en-PK');
+  const now = transaction.created_at
+    ? new Date(transaction.created_at).toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })
+    : new Date().toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' });
 
+  const items = transaction.items || [];
+  const subtotal = Number(transaction.subtotal) || 0;
+  const discount = Number(transaction.discount_amount) || 0;
+  const tax = Number(transaction.tax_amount) || 0;
+  const total = Number(transaction.total_amount) || 0;
+  const paid = Number(transaction.paid_amount) || total;
+  const change = Number(transaction.change_amount) || 0;
+  const receiptNo = transaction.receipt_number || 'REC-POS';
+  const customerName = transaction.customer_name || 'Walk-in Customer';
+  const paymentMethod = transaction.payment_method || 'CASH';
+
+  printArea.className = '';
   printArea.innerHTML = `
     <div class="thermal-receipt">
-      <div class="receipt-center">
-        <h3 style="margin:0; font-size:16px;">APEX COMMERCIAL</h3>
-        <p style="margin:2px 0;">Plot 45, Industrial Area, Sector 7</p>
-        <p style="margin:2px 0;">Tel: +92 21 35050505 | NTN: 7492019-2</p>
-        <p style="margin:2px 0; font-weight:bold;">POS RETAIL SALES SLIP</p>
+      <div class="receipt-header">
+        <div class="receipt-title">OneNet Solutions</div>
+        <div class="receipt-subtitle">ApexERP & POS Enterprise</div>
+        <div class="receipt-info">Muslim Town, Lahore, Pakistan</div>
+        <div class="receipt-info">Tel: +92 300 1234567 | NTN: 7492019-2</div>
+        <div class="receipt-badge">*** POS RETAIL SALES SLIP ***</div>
       </div>
 
       <div class="receipt-divider"></div>
 
-      <div class="receipt-row">
-        <span>Receipt:</span>
-        <span class="receipt-bold">${transaction.receipt_number}</span>
-      </div>
-      <div class="receipt-row">
-        <span>Date:</span>
-        <span>${now}</span>
-      </div>
-      <div class="receipt-row">
-        <span>Cashier:</span>
-        <span>Counter 01 / Ali</span>
-      </div>
-      <div class="receipt-row">
-        <span>Customer:</span>
-        <span>${transaction.customer_name || 'Walk-in'}</span>
+      <div class="receipt-meta">
+        <div class="receipt-row"><span>Receipt No:</span><strong>${receiptNo}</strong></div>
+        <div class="receipt-row"><span>Date:</span><span>${now}</span></div>
+        <div class="receipt-row"><span>Counter / Cashier:</span><span>Counter 01 / Admin</span></div>
+        <div class="receipt-row"><span>Customer:</span><span>${customerName}</span></div>
       </div>
 
       <div class="receipt-divider"></div>
 
-      <div class="receipt-row receipt-bold">
-        <span style="flex:2;">ITEM</span>
-        <span style="flex:1; text-align:center;">QTY</span>
-        <span style="flex:1; text-align:right;">PRICE</span>
-      </div>
-
-      ${transaction.items.map(i => `
-        <div class="receipt-row">
-          <span style="flex:2;">${i.name}</span>
-          <span style="flex:1; text-align:center;">${i.quantity}</span>
-          <span style="flex:1; text-align:right;">${(i.unit_price * i.quantity).toFixed(2)}</span>
+      <div class="receipt-items-table">
+        <div class="receipt-row receipt-table-header">
+          <span class="col-item">ITEM</span>
+          <span class="col-qty">QTY</span>
+          <span class="col-rate">RATE</span>
+          <span class="col-total">TOTAL</span>
         </div>
-      `).join('')}
-
-      <div class="receipt-divider"></div>
-
-      <div class="receipt-row">
-        <span>Subtotal:</span>
-        <span>${transaction.subtotal.toFixed(2)}</span>
-      </div>
-      <div class="receipt-row">
-        <span>Discount:</span>
-        <span>-${transaction.discount_amount.toFixed(2)}</span>
-      </div>
-      <div class="receipt-row">
-        <span>Sales Tax / VAT (18%):</span>
-        <span>${transaction.tax_amount.toFixed(2)}</span>
-      </div>
-      <div class="receipt-row receipt-bold" style="font-size:14px; margin-top:4px;">
-        <span>NET TOTAL:</span>
-        <span>Rs. ${transaction.total_amount.toFixed(2)}</span>
-      </div>
-      <div class="receipt-row">
-        <span>Payment Method:</span>
-        <span>${transaction.payment_method}</span>
-      </div>
-      <div class="receipt-row">
-        <span>Amount Paid:</span>
-        <span>Rs. ${transaction.paid_amount.toFixed(2)}</span>
-      </div>
-      <div class="receipt-row">
-        <span>Change Returned:</span>
-        <span>Rs. ${transaction.change_amount.toFixed(2)}</span>
+        <div class="receipt-divider-dotted"></div>
+        ${items.map(item => `
+          <div class="receipt-row">
+            <span class="col-item">${item.name || item.product_name || 'Item'}</span>
+            <span class="col-qty">${item.quantity}</span>
+            <span class="col-rate">${Number(item.unit_price).toFixed(2)}</span>
+            <span class="col-total">${(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}</span>
+          </div>
+        `).join('')}
       </div>
 
       <div class="receipt-divider"></div>
 
-      <div class="receipt-center" style="margin-top:10px;">
-        <p style="font-size:11px; margin:2px 0;">FBR / ZATCA E-Invoice Verified</p>
-        <p style="font-size:10px; margin:2px 0;">Thank you for shopping with us!</p>
-        <p style="font-size:9px; margin-top:6px; color:#555;">Software: ApexERP Cloud</p>
+      <div class="receipt-summary">
+        <div class="receipt-row"><span>Subtotal:</span><span>Rs. ${subtotal.toFixed(2)}</span></div>
+        ${discount > 0 ? `<div class="receipt-row"><span>Discount:</span><span>-Rs. ${discount.toFixed(2)}</span></div>` : ''}
+        ${tax > 0 ? `<div class="receipt-row"><span>Sales Tax (18%):</span><span>Rs. ${tax.toFixed(2)}</span></div>` : ''}
+        <div class="receipt-row receipt-grand-total">
+          <span>NET PAYABLE:</span>
+          <span>Rs. ${total.toFixed(2)}</span>
+        </div>
+        <div class="receipt-row"><span>Payment Method:</span><span>${paymentMethod}</span></div>
+        <div class="receipt-row"><span>Amount Tendered:</span><span>Rs. ${paid.toFixed(2)}</span></div>
+        <div class="receipt-row"><span>Change Returned:</span><span>Rs. ${change.toFixed(2)}</span></div>
+      </div>
+
+      <div class="receipt-divider"></div>
+
+      <div class="receipt-footer">
+        <div>* FBR / Sales Tax Compliant *</div>
+        <div>Thank you for shopping with us!</div>
+        <div style="font-size:9px; color:#555; margin-top:4px;">ApexERP Cloud System</div>
       </div>
     </div>
   `;
 
-  // Trigger browser print
-  window.print();
+  // Brief delay to ensure browser layout engine parses printable contents before print dialog freeze
+  setTimeout(() => {
+    window.print();
+  }, 120);
 }
 
 function openShiftModal() {
