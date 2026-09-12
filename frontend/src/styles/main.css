@@ -1106,6 +1106,226 @@ body::before {
 }
 
 /* ============================================================================
+   ENTERPRISE MULTI-COMPANY & RBAC MATRIX STYLES
+   ============================================================================ */
+.company-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.company-badge-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: var(--radius-full);
+  color: #38bdf8;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.company-badge-btn:hover {
+  background: rgba(14, 165, 233, 0.2);
+  border-color: #38bdf8;
+}
+
+.company-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 280px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6);
+  z-index: 1200;
+  overflow: hidden;
+}
+
+.company-menu-header {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.company-menu-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.15s ease;
+}
+
+.company-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.company-menu-item.active {
+  background: rgba(14, 165, 233, 0.15);
+  border-left: 3px solid #38bdf8;
+}
+
+.company-item-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.company-item-city {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.company-menu-footer {
+  padding: 0.6rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* User Nav Dropdown */
+.user-nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.user-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.45rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-bright);
+}
+
+.user-avatar-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #6366f1);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.user-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.user-role-badge {
+  font-size: 0.68rem;
+  color: #38bdf8;
+}
+
+.user-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6);
+  z-index: 1200;
+  overflow: hidden;
+}
+
+.user-menu-info {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.user-menu-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-menu-action-item {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.user-menu-action-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+/* Permissions Matrix Chips */
+.matrix-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.matrix-tag.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.matrix-tag.inactive {
+  background: rgba(255, 255, 255, 0.04);
+  color: #64748b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.matrix-tag.locked {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.btn-xs {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================================================
    ROBUST PRINT ENGINE (58mm/80mm THERMAL SLIPS, A4 INVOICES, BARCODE SHEETS)
    ============================================================================ */
 #printable-receipt-area {

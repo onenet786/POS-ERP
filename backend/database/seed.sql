@@ -145,6 +145,32 @@ INSERT INTO bom_items (bom_recipe_id, raw_product_id, required_quantity, unit_co
 (1, 3, 2.00, 340.00),  -- 2x Red Bull
 (1, 5, 2.00, 120.00);  -- 2x Oreo
 
+-- 13. COMPANIES (MULTI-COMPANY EDITION)
+INSERT INTO companies (id, name, legal_name, tax_id, strn, phone, email, address, city, currency, is_active) VALUES
+(1, 'OneNet Solutions', 'OneNet Solutions Enterprise Suite (Head Office)', 'NTN-7492019-2', 'STRN-11-22-3344-555', '+92 42 30000001', 'info@onenetsolutions.com', 'Muslim Town, Lahore, Pakistan', 'Lahore', 'PKR', TRUE),
+(2, 'OneNet Retail Mart', 'OneNet Retail & Superstore Division', 'NTN-7492019-3', 'STRN-22-33-4455-666', '+92 21 35050505', 'retail@onenetsolutions.com', 'Shop 12-B, Mega Mall, Clifton', 'Karachi', 'PKR', TRUE),
+(3, 'OneNet Wholesale', 'OneNet Wholesale & Regional Distribution', 'NTN-7492019-4', 'STRN-33-44-5566-777', '+92 51 2223344', 'wholesale@onenetsolutions.com', 'Sector I-9 Industrial Area', 'Islamabad', 'PKR', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+-- User Company Grants
+INSERT INTO user_company_access (user_id, company_id, is_default) VALUES
+(1, 1, TRUE),
+(1, 2, FALSE),
+(1, 3, FALSE),
+(2, 1, TRUE),
+(2, 2, FALSE),
+(3, 2, TRUE),
+(4, 1, TRUE)
+ON CONFLICT (user_id, company_id) DO NOTHING;
+
+-- 14. HR & PAYROLL EMPLOYEES
+INSERT INTO employees (id, company_id, employee_code, full_name, department, designation, cnic, phone, email, base_salary, allowances, tax_deduction, status, qr_badge_code) VALUES
+(1, 1, 'EMP-101', 'Muhammad Ali Raza', 'Retail POS Operations', 'Senior Cashier & Terminal Lead', '35201-1234567-1', '+92 300 1234567', 'ali.raza@onenet.local', 48000.00, 3500.00, 1200.00, 'ACTIVE', 'QR-EMP-101-ALI'),
+(2, 1, 'EMP-102', 'Zainab Fatima', 'Store Management', 'Operations & Store Manager', '35201-7654321-2', '+92 321 9876543', 'zainab@onenet.local', 85000.00, 8000.00, 4500.00, 'ACTIVE', 'QR-EMP-102-ZAINAB'),
+(3, 1, 'EMP-103', 'Hamza Khan', 'Field Sales Logistics', 'Mobile Order Booking Officer', '35201-5544332-3', '+92 333 4455667', 'hamza@onenet.local', 42000.00, 5000.00, 1000.00, 'ACTIVE', 'QR-EMP-103-HAMZA'),
+(4, 1, 'EMP-104', 'Bilal Tariq', 'Finance & Accounts', 'Senior Accountant', '35201-9988776-4', '+92 345 6677889', 'bilal.acc@onenet.local', 65000.00, 4000.00, 2500.00, 'ACTIVE', 'QR-EMP-104-BILAL')
+ON CONFLICT (id) DO NOTHING;
+
 -- Restart sequences to avoid primary key conflicts on future inserts
 SELECT setval(pg_get_serial_sequence('users', 'id'), coalesce(max(id), 1)) FROM users;
 SELECT setval(pg_get_serial_sequence('roles', 'id'), coalesce(max(id), 1)) FROM roles;
@@ -158,3 +184,6 @@ SELECT setval(pg_get_serial_sequence('vendors', 'id'), coalesce(max(id), 1)) FRO
 SELECT setval(pg_get_serial_sequence('pos_registers', 'id'), coalesce(max(id), 1)) FROM pos_registers;
 SELECT setval(pg_get_serial_sequence('pos_shifts', 'id'), coalesce(max(id), 1)) FROM pos_shifts;
 SELECT setval(pg_get_serial_sequence('bom_recipes', 'id'), coalesce(max(id), 1)) FROM bom_recipes;
+SELECT setval(pg_get_serial_sequence('companies', 'id'), coalesce(max(id), 1)) FROM companies;
+SELECT setval(pg_get_serial_sequence('employees', 'id'), coalesce(max(id), 1)) FROM employees;
+

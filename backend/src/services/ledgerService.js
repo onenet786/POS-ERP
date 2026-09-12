@@ -146,4 +146,54 @@ export class LedgerService {
       lines
     });
   }
+
+  /**
+   * Post Payroll Disbursement
+   */
+  static async postPayrollRun(payrollData) {
+    const lines = [
+      {
+        accountId: 5030, // Salaries Expense
+        debit: Number(payrollData.total_gross),
+        credit: 0,
+        memo: `Gross Salaries & Allowances - ${payrollData.month_year}`
+      },
+      {
+        accountId: 2020, // Withholding Tax Payable
+        debit: 0,
+        credit: Number(payrollData.total_deductions),
+        memo: `Payroll Tax Deductions - ${payrollData.month_year}`
+      },
+      {
+        accountId: 1020, // Bank Account
+        debit: 0,
+        credit: Number(payrollData.total_net),
+        memo: `Net Salary Disbursed via Bank Transfer - ${payrollData.month_year}`
+      }
+    ];
+
+    return this.postAutomatedEntry({
+      reference: `PAY-${payrollData.month_year.replace(/\s+/g, '-')}`,
+      narration: `Automated Payroll Processing for ${payrollData.month_year} (${payrollData.employee_count} Employees)`,
+      sourceDocument: 'PAYROLL',
+      sourceId: 0,
+      lines
+    });
+  }
 }
+
+export async function postGeneralJournal(entryData) {
+  return LedgerService.postAutomatedEntry({
+    reference: entryData.source_reference || 'JV',
+    narration: entryData.narration,
+    sourceDocument: entryData.source_module || 'MANUAL',
+    sourceId: 0,
+    lines: (entryData.lines || []).map(l => ({
+      accountId: parseInt(l.account_code) || 1010,
+      debit: Number(l.debit_amount) || 0,
+      credit: Number(l.credit_amount) || 0,
+      memo: l.description || ''
+    }))
+  });
+}
+

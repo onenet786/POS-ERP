@@ -43,8 +43,15 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- 2. CHART OF ACCOUNTS & DOUBLE-ENTRY GENERAL LEDGER
-CREATE TYPE account_type AS ENUM ('Asset', 'Liability', 'Equity', 'Revenue', 'Expense');
-CREATE TYPE normal_balance AS ENUM ('Debit', 'Credit');
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'account_type') THEN
+        CREATE TYPE account_type AS ENUM ('Asset', 'Liability', 'Equity', 'Revenue', 'Expense');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'normal_balance') THEN
+        CREATE TYPE normal_balance AS ENUM ('Debit', 'Credit');
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS chart_of_accounts (
     id SERIAL PRIMARY KEY,
@@ -432,6 +439,79 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 10. MULTI-COMPANY ENTERPRISE ARCHITECTURE
+CREATE TABLE IF NOT EXISTS companies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    legal_name VARCHAR(200) NOT NULL,
+    tax_id VARCHAR(50),
+    strn VARCHAR(50),
+    phone VARCHAR(50),
+    email VARCHAR(100),
+    address TEXT,
+    city VARCHAR(50) DEFAULT 'Lahore',
+    currency VARCHAR(10) DEFAULT 'PKR',
+    logo_url TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_company_access (
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    company_id INT REFERENCES companies(id) ON DELETE CASCADE,
+    is_default BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (user_id, company_id)
+);
+
+-- 11. HR, BIOMETRIC / QR ATTENDANCE & PAYROLL
+CREATE TABLE IF NOT EXISTS employees (
+    id SERIAL PRIMARY KEY,
+    company_id INT REFERENCES companies(id),
+    employee_code VARCHAR(50) NOT NULL UNIQUE,
+    full_name VARCHAR(150) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    designation VARCHAR(100) NOT NULL,
+    cnic VARCHAR(30),
+    phone VARCHAR(30),
+    email VARCHAR(100),
+    base_salary NUMERIC(15, 2) NOT NULL DEFAULT 40000.00,
+    allowances NUMERIC(15, 2) DEFAULT 0.00,
+    tax_deduction NUMERIC(15, 2) DEFAULT 0.00,
+    joining_date DATE DEFAULT CURRENT_DATE,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    qr_badge_code VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS attendance_logs (
+    id SERIAL PRIMARY KEY,
+    employee_id INT REFERENCES employees(id) ON DELETE CASCADE,
+    company_id INT REFERENCES companies(id),
+    log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    clock_in TIME WITHOUT TIME ZONE,
+    clock_out TIME WITHOUT TIME ZONE,
+    method VARCHAR(50) DEFAULT 'BIOMETRIC', -- 'BIOMETRIC', 'QR_SCANNER', 'MOBILE_GPS', 'MANUAL'
+    latitude NUMERIC(10, 6),
+    longitude NUMERIC(10, 6),
+    status VARCHAR(30) DEFAULT 'PRESENT', -- 'PRESENT', 'LATE', 'HALF_DAY', 'ON_LEAVE'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS payroll_runs (
+    id SERIAL PRIMARY KEY,
+    company_id INT REFERENCES companies(id),
+    month_year VARCHAR(30) NOT NULL,
+    total_gross NUMERIC(15, 2) NOT NULL,
+    total_deductions NUMERIC(15, 2) NOT NULL,
+    total_net NUMERIC(15, 2) NOT NULL,
+    employee_count INT NOT NULL,
+    journal_entry_id INT REFERENCES journal_entries(id),
+    status VARCHAR(30) DEFAULT 'PROCESSED',
+    processed_by INT REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- INDEXES FOR MAXIMUM QUERY PERFORMANCE
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
@@ -442,3 +522,5 @@ CREATE INDEX IF NOT EXISTS idx_pos_transactions_receipt ON pos_transactions(rece
 CREATE INDEX IF NOT EXISTS idx_pos_transactions_created ON pos_transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_sales_invoices_customer ON sales_invoices(customer_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_bills_vendor ON purchase_bills(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_emp_date ON attendance_logs(employee_id, log_date);
+

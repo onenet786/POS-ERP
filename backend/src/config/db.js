@@ -203,7 +203,213 @@ const mockStore = {
       execution_date: new Date().toISOString().split('T')[0],
       total_production_cost: 23400.00
     }
-  ]
+  ],
+  companies: [
+    {
+      id: 1,
+      name: 'OneNet Solutions',
+      legal_name: 'OneNet Solutions Enterprise Suite (Head Office)',
+      tax_id: 'NTN-7492019-2',
+      strn: 'STRN-11-22-3344-555',
+      phone: '+92 42 30000001',
+      email: 'info@onenetsolutions.com',
+      address: 'Muslim Town, Lahore, Pakistan',
+      city: 'Lahore',
+      currency: 'PKR',
+      is_active: true
+    },
+    {
+      id: 2,
+      name: 'OneNet Retail Mart',
+      legal_name: 'OneNet Retail & Superstore Division',
+      tax_id: 'NTN-7492019-3',
+      strn: 'STRN-22-33-4455-666',
+      phone: '+92 21 35050505',
+      email: 'retail@onenetsolutions.com',
+      address: 'Shop 12-B, Mega Mall, Clifton',
+      city: 'Karachi',
+      currency: 'PKR',
+      is_active: true
+    },
+    {
+      id: 3,
+      name: 'OneNet Wholesale',
+      legal_name: 'OneNet Wholesale & Regional Distribution',
+      tax_id: 'NTN-7492019-4',
+      strn: 'STRN-33-44-5566-777',
+      phone: '+92 51 2223344',
+      email: 'wholesale@onenetsolutions.com',
+      address: 'Sector I-9 Industrial Area',
+      city: 'Islamabad',
+      currency: 'PKR',
+      is_active: true
+    }
+  ],
+  user_company_access: [
+    { user_id: 1, company_ids: [1, 2, 3] },
+    { user_id: 2, company_ids: [1, 2] },
+    { user_id: 3, company_ids: [2] },
+    { user_id: 4, company_ids: [1] }
+  ],
+  permissions_matrix: {
+    'Super Admin': {
+      pos: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      inventory: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      sales: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      accounting: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      manufacturing: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      mobile_booker: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      payroll: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      backup: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      reports: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+      users: ['view', 'create', 'edit', 'delete', 'approve', 'export']
+    },
+    'Store Manager': {
+      pos: ['view', 'create', 'edit', 'export'],
+      inventory: ['view', 'create', 'edit', 'approve', 'export'],
+      sales: ['view', 'create', 'edit', 'export'],
+      accounting: ['view'],
+      manufacturing: ['view', 'create', 'edit'],
+      mobile_booker: ['view', 'create'],
+      payroll: ['view'],
+      backup: ['view'],
+      reports: ['view', 'export'],
+      users: ['view']
+    },
+    'Cashier': {
+      pos: ['view', 'create'],
+      inventory: ['view'],
+      sales: ['view', 'create'],
+      accounting: [],
+      manufacturing: [],
+      mobile_booker: [],
+      payroll: [],
+      backup: [],
+      reports: ['view'],
+      users: []
+    },
+    'Field Sales Booker': {
+      pos: [],
+      inventory: ['view'],
+      sales: ['view', 'create'],
+      accounting: [],
+      manufacturing: [],
+      mobile_booker: ['view', 'create', 'edit'],
+      payroll: [],
+      backup: [],
+      reports: [],
+      users: []
+    }
+  },
+  employees: [
+    {
+      id: 1,
+      company_id: 1,
+      employee_code: 'EMP-101',
+      full_name: 'Muhammad Ali Raza',
+      department: 'Retail POS Operations',
+      designation: 'Senior Cashier & Terminal Lead',
+      cnic: '35201-1234567-1',
+      phone: '+92 300 1234567',
+      email: 'ali.raza@onenet.local',
+      base_salary: 48000.00,
+      allowances: 3500.00,
+      tax_deduction: 1200.00,
+      status: 'ACTIVE',
+      qr_badge_code: 'QR-EMP-101-ALI'
+    },
+    {
+      id: 2,
+      company_id: 1,
+      employee_code: 'EMP-102',
+      full_name: 'Zainab Fatima',
+      department: 'Store Management',
+      designation: 'Operations & Store Manager',
+      cnic: '35201-7654321-2',
+      phone: '+92 321 9876543',
+      email: 'zainab@onenet.local',
+      base_salary: 85000.00,
+      allowances: 8000.00,
+      tax_deduction: 4500.00,
+      status: 'ACTIVE',
+      qr_badge_code: 'QR-EMP-102-ZAINAB'
+    },
+    {
+      id: 3,
+      company_id: 1,
+      employee_code: 'EMP-103',
+      full_name: 'Hamza Khan',
+      department: 'Field Sales Logistics',
+      designation: 'Mobile Order Booking Officer',
+      cnic: '35201-5544332-3',
+      phone: '+92 333 4455667',
+      email: 'hamza@onenet.local',
+      base_salary: 42000.00,
+      allowances: 5000.00,
+      tax_deduction: 1000.00,
+      status: 'ACTIVE',
+      qr_badge_code: 'QR-EMP-103-HAMZA'
+    },
+    {
+      id: 4,
+      company_id: 1,
+      employee_code: 'EMP-104',
+      full_name: 'Bilal Tariq',
+      department: 'Finance & Accounts',
+      designation: 'Senior Accountant',
+      cnic: '35201-9988776-4',
+      phone: '+92 345 6677889',
+      email: 'bilal.acc@onenet.local',
+      base_salary: 65000.00,
+      allowances: 4000.00,
+      tax_deduction: 2500.00,
+      status: 'ACTIVE',
+      qr_badge_code: 'QR-EMP-104-BILAL'
+    }
+  ],
+  attendance_logs: [
+    {
+      id: 1,
+      employee_id: 1,
+      employee_name: 'Muhammad Ali Raza',
+      log_date: new Date().toISOString().split('T')[0],
+      clock_in: '08:55:00',
+      clock_out: '17:05:00',
+      method: 'BIOMETRIC',
+      status: 'PRESENT'
+    },
+    {
+      id: 2,
+      employee_id: 2,
+      employee_name: 'Zainab Fatima',
+      log_date: new Date().toISOString().split('T')[0],
+      clock_in: '09:02:00',
+      clock_out: '18:15:00',
+      method: 'QR_SCANNER',
+      status: 'PRESENT'
+    },
+    {
+      id: 3,
+      employee_id: 3,
+      employee_name: 'Hamza Khan',
+      log_date: new Date().toISOString().split('T')[0],
+      clock_in: '09:30:00',
+      clock_out: '17:00:00',
+      method: 'MOBILE_GPS',
+      status: 'LATE'
+    },
+    {
+      id: 4,
+      employee_id: 4,
+      employee_name: 'Bilal Tariq',
+      log_date: new Date().toISOString().split('T')[0],
+      clock_in: '08:50:00',
+      clock_out: '17:00:00',
+      method: 'BIOMETRIC',
+      status: 'PRESENT'
+    }
+  ],
+  payroll_runs: []
 };
 
 // Initialize PostgreSQL Connection Pool

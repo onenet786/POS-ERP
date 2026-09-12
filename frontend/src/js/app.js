@@ -1,5 +1,5 @@
 import Chart from 'chart.js/auto';
-import { AppState, formatCurrency, showToast } from './state.js';
+import { AppState, formatCurrency, showToast, hasPermission } from './state.js';
 import { Api, RealtimeClient } from './api.js';
 import { renderPosView } from './pos.js';
 import { renderInventoryView } from './inventory.js';
@@ -7,11 +7,21 @@ import { renderSalesView } from './sales.js';
 import { renderAccountingView } from './accounting.js';
 import { renderManufacturingView } from './manufacturing.js';
 import { renderMobileBookerView } from './mobileBooker.js';
+import { initCompanyContext } from './company.js';
+import { renderUserNavWidget } from './auth.js';
+import { renderUsersView } from './users.js';
+import { renderPayrollView } from './payroll.js';
+import { renderReportsView } from './reports.js';
+import { renderBackupView } from './backup.js';
 
 let salesChartInstance = null;
 
 async function bootstrap() {
-  console.log('[ApexERP] Bootstrapping Application...');
+  console.log('[OneNet Solutions] Bootstrapping Enterprise Suite...');
+
+  // Initialize Multi-Company Context & User Session Widget
+  await initCompanyContext();
+  renderUserNavWidget();
 
   // Initialize Data
   try {
@@ -54,8 +64,15 @@ async function bootstrap() {
   // Attach Navigation Listeners
   attachNavigation();
 
+  // Handle URL hash changes
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.slice(1);
+    if (hash) navigateTo(hash);
+  });
+
   // Render initial module
-  navigateTo('dashboard');
+  const initialHash = window.location.hash.slice(1) || 'dashboard';
+  navigateTo(initialHash);
 }
 
 function attachNavigation() {
@@ -94,6 +111,12 @@ function attachNavigation() {
 }
 
 function navigateTo(moduleName) {
+  // Check RBAC permission
+  if (moduleName !== 'dashboard' && !hasPermission(moduleName, 'view')) {
+    showToast(`Access Denied: Your assigned role (${AppState.currentUser?.role_name}) does not have permission to view ${moduleName}`, 'error');
+    moduleName = 'dashboard';
+  }
+
   AppState.activeModule = moduleName;
 
   // Update active classes
@@ -131,10 +154,23 @@ function navigateTo(moduleName) {
     case 'mobile_booker':
       renderMobileBookerView(viewport);
       break;
+    case 'payroll':
+      renderPayrollView(viewport);
+      break;
+    case 'reports':
+      renderReportsView(viewport);
+      break;
+    case 'users':
+      renderUsersView(viewport);
+      break;
+    case 'backup':
+      renderBackupView(viewport);
+      break;
     default:
       renderDashboardView(viewport);
   }
 }
+
 
 async function renderDashboardView(container) {
   try {

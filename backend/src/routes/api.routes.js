@@ -1,5 +1,17 @@
 import express from 'express';
-import { login, getProfile } from '../controllers/auth.controller.js';
+import { login, googleLogin, getProfile } from '../controllers/auth.controller.js';
+import { getCompanies, updateCompany, createCompany } from '../controllers/company.controller.js';
+import { getUsers, createUser, updateUser, getPermissionsMatrix, updatePermissionsMatrix } from '../controllers/users.controller.js';
+import {
+  getEmployees,
+  createEmployee,
+  getAttendanceLogs,
+  logAttendance,
+  syncBiometricDevice,
+  processPayroll,
+  getPayrollHistory
+} from '../controllers/payroll.controller.js';
+import { exportDatabaseBackup, restoreDatabaseBackup } from '../controllers/backup.controller.js';
 import {
   getProducts,
   createProduct,
@@ -40,7 +52,33 @@ const router = express.Router();
 
 // Public / Auth
 router.post('/auth/login', login);
+router.post('/auth/google', googleLogin);
 router.get('/auth/profile', authenticateToken, getProfile);
+
+// Multi-Company Management
+router.get('/companies', getCompanies);
+router.post('/companies', createCompany);
+router.put('/companies/:id', updateCompany);
+
+// Enterprise Security, Users & RBAC Permissions Matrix
+router.get('/users', getUsers);
+router.post('/users', createUser);
+router.put('/users/:id', updateUser);
+router.get('/users/permissions/matrix', getPermissionsMatrix);
+router.put('/users/permissions/matrix', updatePermissionsMatrix);
+
+// HR, Biometric / QR Attendance & Payroll
+router.get('/payroll/employees', getEmployees);
+router.post('/payroll/employees', createEmployee);
+router.get('/payroll/attendance', getAttendanceLogs);
+router.post('/payroll/attendance/log', logAttendance);
+router.post('/payroll/biometric/sync', syncBiometricDevice);
+router.post('/payroll/process', processPayroll);
+router.get('/payroll/history', getPayrollHistory);
+
+// Database Backup & Restore
+router.get('/backup/export', exportDatabaseBackup);
+router.post('/backup/restore', restoreDatabaseBackup);
 
 // Dashboard & KPIs
 router.get('/reports/dashboard', getDashboardKPIs);
@@ -79,3 +117,4 @@ router.get('/manufacturing/orders', getAssemblyOrders);
 router.post('/manufacturing/assemble', createAssemblyOrder);
 
 export default router;
+

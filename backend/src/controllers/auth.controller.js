@@ -42,12 +42,17 @@ export async function login(req, res) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    const store = getMockStore();
+    const access = store.user_company_access.find(a => a.user_id === user.id);
+    const assignedCompanies = access ? access.company_ids : [1];
+
     const token = jwt.sign(
       {
         id: user.id,
         username: user.username,
         full_name: user.full_name,
-        role_name: user.role_name || 'Cashier'
+        role_name: user.role_name || 'Cashier',
+        assigned_companies: assignedCompanies
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -61,7 +66,62 @@ export async function login(req, res) {
         username: user.username,
         full_name: user.full_name,
         email: user.email,
-        role_name: user.role_name || 'Cashier'
+        role_name: user.role_name || 'Cashier',
+        assigned_companies: assignedCompanies
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function googleLogin(req, res) {
+  try {
+    const { email, name, google_id } = req.body;
+    const store = getMockStore();
+
+    // Look for existing user or create SSO user
+    let user = store.users.find(u => u.email === email);
+    if (!user) {
+      user = {
+        id: store.users.length + 1,
+        username: email.split('@')[0],
+        email: email || 'user@google.com',
+        full_name: name || 'Google Enterprise User',
+        role_id: 1,
+        role_name: 'Super Admin',
+        is_active: true
+      };
+      store.users.push(user);
+      store.user_company_access.push({ user_id: user.id, company_ids: [1, 2, 3] });
+    }
+
+    const access = store.user_company_access.find(a => a.user_id === user.id);
+    const assignedCompanies = access ? access.company_ids : [1, 2, 3];
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        full_name: user.full_name,
+        role_name: user.role_name || 'Super Admin',
+        assigned_companies: assignedCompanies
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        full_name: user.full_name,
+        email: user.email,
+        role_name: user.role_name || 'Super Admin',
+        assigned_companies: assignedCompanies,
+        auth_provider: 'GOOGLE'
       }
     });
   } catch (err) {
@@ -72,3 +132,4 @@ export async function login(req, res) {
 export async function getProfile(req, res) {
   res.json({ success: true, user: req.user });
 }
+

@@ -1,11 +1,24 @@
 export const AppState = {
-  currentUser: {
+  currentUser: JSON.parse(localStorage.getItem('onenet_user') || 'null') || {
     id: 1,
     username: 'admin',
     full_name: 'System Administrator',
-    role_name: 'Super Admin'
+    role_name: 'Super Admin',
+    assigned_companies: [1, 2, 3]
   },
-  activeModule: 'dashboard', // dashboard, pos, inventory, sales, accounting, manufacturing, mobile_booker
+  activeCompany: JSON.parse(localStorage.getItem('onenet_active_company') || 'null') || {
+    id: 1,
+    name: 'OneNet Solutions',
+    legal_name: 'OneNet Solutions Enterprise Suite (Head Office)',
+    address: 'Muslim Town, Lahore, Pakistan',
+    phone: '+92 42 30000001',
+    tax_id: 'NTN-7492019-2',
+    strn: 'STRN-11-22-3344-555',
+    currency: 'PKR'
+  },
+  companies: [],
+  permissionsMatrix: {},
+  activeModule: 'dashboard', // dashboard, pos, inventory, sales, accounting, manufacturing, mobile_booker, payroll, reports, users, backup
   products: [],
   categories: [],
   warehouses: [],
@@ -29,6 +42,16 @@ export const AppState = {
     geoLng: null
   }
 };
+
+export function hasPermission(module, action = 'view') {
+  if (!AppState.currentUser) return false;
+  const role = AppState.currentUser.role_name || 'Cashier';
+  if (role === 'Super Admin') return true;
+  const matrix = AppState.permissionsMatrix[role];
+  if (!matrix) return true; // default permit if not loaded yet
+  const modulePerms = matrix[module] || [];
+  return modulePerms.includes(action);
+}
 
 export function formatCurrency(amount) {
   const val = Number(amount) || 0;
