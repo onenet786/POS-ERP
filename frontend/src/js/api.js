@@ -2,14 +2,16 @@ const API_BASE = '/api';
 
 export class Api {
   static getToken() {
-    return localStorage.getItem('apexerppos_token') || '';
+    return localStorage.getItem('onenet_token') || localStorage.getItem('apexerppos_token') || '';
   }
 
   static setToken(token) {
+    localStorage.setItem('onenet_token', token);
     localStorage.setItem('apexerppos_token', token);
   }
 
   static clearToken() {
+    localStorage.removeItem('onenet_token');
     localStorage.removeItem('apexerppos_token');
   }
 

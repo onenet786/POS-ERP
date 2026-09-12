@@ -1,11 +1,5 @@
 export const AppState = {
-  currentUser: JSON.parse(localStorage.getItem('onenet_user') || 'null') || {
-    id: 1,
-    username: 'admin',
-    full_name: 'System Administrator',
-    role_name: 'Super Admin',
-    assigned_companies: [1, 2, 3]
-  },
+  currentUser: JSON.parse(localStorage.getItem('onenet_user') || 'null'),
   activeCompany: JSON.parse(localStorage.getItem('onenet_active_company') || 'null') || {
     id: 1,
     name: 'OneNet Solutions',

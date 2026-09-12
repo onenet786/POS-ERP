@@ -8,20 +8,48 @@ import { renderAccountingView } from './accounting.js';
 import { renderManufacturingView } from './manufacturing.js';
 import { renderMobileBookerView } from './mobileBooker.js';
 import { initCompanyContext } from './company.js';
-import { renderUserNavWidget } from './auth.js';
+import { renderUserNavWidget, renderAuthPortal } from './auth.js';
 import { renderUsersView } from './users.js';
 import { renderPayrollView } from './payroll.js';
 import { renderReportsView } from './reports.js';
 import { renderBackupView } from './backup.js';
 
 let salesChartInstance = null;
+let _isWorkspaceStarted = false;
 
 async function bootstrap() {
   console.log('[OneNet Solutions] Bootstrapping Enterprise Suite...');
 
+  // Authentication Gate Check: If no user session, show Login Portal first
+  if (!AppState.currentUser) {
+    const appRoot = document.getElementById('app-root');
+    if (appRoot) appRoot.style.display = 'none';
+    renderAuthPortal(async () => {
+      await startWorkspace();
+    });
+    return;
+  }
+
+  await startWorkspace();
+}
+
+async function startWorkspace() {
+  const appRoot = document.getElementById('app-root');
+  if (appRoot) appRoot.style.display = 'flex';
+
+  const authRoot = document.getElementById('auth-root');
+  if (authRoot) authRoot.style.display = 'none';
+
   // Initialize Multi-Company Context & User Session Widget
   await initCompanyContext();
-  renderUserNavWidget();
+  renderUserNavWidget(async () => {
+    // When signed out, show auth portal
+    _isWorkspaceStarted = false;
+    if (appRoot) appRoot.style.display = 'none';
+    renderAuthPortal(async () => {
+      await startWorkspace();
+    });
+  });
 
   // Initialize Data
   try {
@@ -41,34 +69,38 @@ async function bootstrap() {
   }
 
   // Connect Real-Time WebSocket
-  RealtimeClient.connect();
-  RealtimeClient.subscribe((data) => {
-    console.log('[Realtime Event]', data);
-    if (data.type === 'POS_SALE') {
-      showToast(`⚡ Realtime: Receipt #${data.payload.receipt_number} tendered for ${formatCurrency(data.payload.total_amount)}`, 'info');
-      if (AppState.activeModule === 'dashboard') {
-        renderDashboardView(document.getElementById('content-viewport'));
+  if (!_isWorkspaceStarted) {
+    RealtimeClient.connect();
+    RealtimeClient.subscribe((data) => {
+      console.log('[Realtime Event]', data);
+      if (data.type === 'POS_SALE') {
+        showToast(`⚡ Realtime: Receipt #${data.payload.receipt_number} tendered for ${formatCurrency(data.payload.total_amount)}`, 'info');
+        if (AppState.activeModule === 'dashboard') {
+          renderDashboardView(document.getElementById('content-viewport'));
+        }
+      } else if (data.type === 'MANUFACTURING_COMPLETED') {
+        showToast(`⚙️ Assembly Completed: ${data.payload.quantity} units of ${data.payload.product}`, 'success');
       }
-    } else if (data.type === 'MANUFACTURING_COMPLETED') {
-      showToast(`⚙️ Assembly Completed: ${data.payload.quantity} units of ${data.payload.product}`, 'success');
+    });
+
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('[PWA] Service Worker registered'))
+        .catch(e => console.warn('[PWA] Service Worker registration failed:', e));
     }
-  });
 
-  // Register PWA Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('[PWA] Service Worker registered'))
-      .catch(e => console.warn('[PWA] Service Worker registration failed:', e));
+    // Attach Navigation Listeners
+    attachNavigation();
+
+    // Handle URL hash changes
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.slice(1);
+      if (hash && AppState.currentUser) navigateTo(hash);
+    });
+
+    _isWorkspaceStarted = true;
   }
-
-  // Attach Navigation Listeners
-  attachNavigation();
-
-  // Handle URL hash changes
-  window.addEventListener('hashchange', () => {
-    const hash = window.location.hash.slice(1);
-    if (hash) navigateTo(hash);
-  });
 
   // Render initial module
   const initialHash = window.location.hash.slice(1) || 'dashboard';
