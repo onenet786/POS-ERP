@@ -1,7 +1,8 @@
 # ApexERP & POS Enterprise
 
 > **Next-Generation Cloud Accounting, Multi-Warehouse Inventory, High-Speed POS & Field Sales Mobile App**  
-> Architected for **Node.js**, **PostgreSQL**, and seamless deployment on **Ubuntu Dedicated Servers with aaPanel**.
+> Architected for **Node.js**, **PostgreSQL**, and seamless deployment on **Ubuntu Dedicated Servers with aaPanel**.  
+> Repository: `https://github.com/onenet786/POS-ERP.git`
 
 ---
 
@@ -53,51 +54,53 @@
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## 📦 Step-by-Step Installation Guide Using Git
 
-### 1. Start the Backend API Service:
-```bash
-cd backend
-npm install
-npm start
-```
-*The server starts on port `5000`. If PostgreSQL is available, it connects to PostgreSQL; otherwise, it seamlessly boots in High-Fidelity Engine mode with full seed data.*
+### Part 1: Push from Local Computer to GitHub
 
-### 2. Start the Frontend Web App:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Open **`http://localhost:3000`** in your browser.
+1. Open your terminal in `f:\Git-Hub\POS-ERP`.
+2. Ensure you are on the `main` branch:
+   ```bash
+   git branch
+   # If needed: git checkout -b main
+   ```
+3. Push the codebase to your GitHub repository:
+   ```bash
+   git push origin main
+   ```
+   *(If your remote branch requires authentication, sign in with your GitHub account or Personal Access Token).*
 
 ---
 
-## 🖥️ Ubuntu Dedicated Server with aaPanel Deployment Guide
+### Part 2: First-Time Installation on Ubuntu Server with aaPanel
 
-### Prerequisites on your Server:
-1. **Ubuntu 20.04 / 22.04 LTS** with **aaPanel** installed.
-2. **PostgreSQL** installed in aaPanel (via aaPanel App Store or `apt-get install postgresql`).
-3. **Node.js Project Manager** (or PM2) installed in aaPanel App Store.
+Log in to your Ubuntu dedicated server via SSH or the built-in **aaPanel Terminal** (`Terminal` tab on aaPanel sidebar).
 
----
-
-### Step 1: Clone or Copy Project to Server
-Place the code into `/www/wwwroot/POS-ERP`:
+#### Step 1: Clone Repository into aaPanel Web Root
 ```bash
+# Navigate to aaPanel websites root directory
 cd /www/wwwroot
-git clone <your-repo-url> POS-ERP
-cd POS-ERP
+
+# Clone your repository
+git clone https://github.com/onenet786/POS-ERP.git POS-ERP
+
+# Enter the project directory
+cd /www/wwwroot/POS-ERP
 ```
 
-### Step 2: Configure Environment Variables
-Edit `/www/wwwroot/POS-ERP/backend/.env`:
+#### Step 2: Configure Environment Variables
+Copy `.env.example` to create your server production `.env`:
+```bash
+cp backend/.env.example backend/.env
+nano backend/.env
+```
+Update your database configuration in `backend/.env` with your aaPanel PostgreSQL credentials:
 ```env
 PORT=5000
 NODE_ENV=production
-JWT_SECRET=your_super_secret_enterprise_jwt_key_2026
+JWT_SECRET=your_super_secret_jwt_key_2026
 
-# Your aaPanel PostgreSQL Database Credentials:
+# PostgreSQL credentials on your aaPanel dedicated server
 PGHOST=localhost
 PGPORT=5432
 PGUSER=postgres
@@ -109,24 +112,76 @@ COMPANY_ADDRESS=Plot 45, Industrial Area, Karachi, Pakistan
 COMPANY_TAX_ID=NTN-7492019-2
 CURRENCY=PKR
 ```
+*(Press `Ctrl + O` then `Enter` to save, and `Ctrl + X` to exit `nano`).*
 
-### Step 3: Run Automated aaPanel Setup Script
+#### Step 3: Run the Automated Installation Script
 ```bash
-chmod +x deploy/aapanel_setup.sh
+chmod +x deploy/aapanel_setup.sh deploy/update.sh
 ./deploy/aapanel_setup.sh
 ```
-*This script automatically creates the `apexerppos` database, executes `schema.sql` and `seed.sql`, builds the frontend bundle, and registers the application in PM2!*
+This automated script will:
+- Check Node.js and PM2.
+- Create the `apexerppos` database in PostgreSQL (if not already existing).
+- Run the schema (`schema.sql`) and seed data (`seed.sql`).
+- Install all dependencies.
+- Build the production frontend bundle into `frontend/dist`.
+- Start the backend PM2 cluster service (`apexerppos-api`) on port `5000`.
 
-### Step 4: Configure aaPanel Website & Nginx Reverse Proxy
-1. In aaPanel dashboard, go to **Website** $\to$ **Add Site**.
-2. Enter your domain (e.g. `erp.yourdomain.com`).
-3. Set **Site Directory** to `/www/wwwroot/POS-ERP/frontend/dist`.
-4. Click **Settings** on your website:
-   - Go to **SSL** $\to$ Apply for free **Let's Encrypt** SSL Certificate.
-   - Go to **Config** (or **Reverse Proxy**) and paste the contents of **[`deploy/nginx_aapanel.conf`](file:///f:/Git-Hub/POS-ERP/deploy/nginx_aapanel.conf)**.
-5. Click **Save**.
+#### Step 4: Configure aaPanel Website & Nginx Reverse Proxy
+1. In your **aaPanel dashboard**, click **Website** $\to$ **Add Site**.
+2. Fill in:
+   - **Domain**: `erp.yourdomain.com` (or your server IP / domain).
+   - **Document Root**: `/www/wwwroot/POS-ERP/frontend/dist`
+   - **FTP / Database**: Leave as is (since PostgreSQL is managed separately).
+3. Click **Submit**.
+4. In the website list, click **Settings** for the newly created site:
+   - **SSL Tab**: Apply for a free **Let's Encrypt** certificate and enable **Force HTTPS**.
+   - **Config Tab (or Reverse Proxy)**: Open `deploy/nginx_aapanel.conf` from this repo, copy its contents, paste into your aaPanel website configuration editor, and replace `erp.yourdomain.com` with your real domain.
+   - Click **Save**.
 
-Your ERP is now live with full HTTPS, WebSocket real-time synchronization, and native PostgreSQL persistence!
+Your ApexERP & POS Enterprise is now live at `https://erp.yourdomain.com`!
+
+---
+
+### Part 3: Deploying Future Updates via Git (One-Command)
+
+Whenever you push code updates, new features, or bug fixes to GitHub from your development machine:
+```bash
+# On your local machine:
+git add .
+git commit -m "feat: your update message"
+git push origin main
+```
+
+To deploy the update on your live Ubuntu server with zero downtime:
+```bash
+# On your server terminal:
+cd /www/wwwroot/POS-ERP
+./deploy/update.sh
+```
+The script will pull latest commits, update dependencies, reload the PM2 cluster with zero downtime, and rebuild the frontend!
+
+---
+
+### Part 4: Automated Continuous Deployment (GitHub Webhook in aaPanel)
+
+If you want your server to automatically update whenever you push to GitHub:
+1. In aaPanel, go to **App Store** $\to$ search for **WebHook** $\to$ Install.
+2. Open WebHook, click **Add Hook**:
+   - **Name**: `ApexERP Auto-Deploy`
+   - **Shell Script**:
+     ```bash
+     cd /www/wwwroot/POS-ERP
+     ./deploy/update.sh
+     ```
+3. aaPanel will generate a Webhook URL (e.g. `https://your-server-ip:8888/hook?access_key=...`).
+4. In your GitHub repository (`https://github.com/onenet786/POS-ERP`):
+   - Go to **Settings** $\to$ **Webhooks** $\to$ **Add webhook**.
+   - Paste the aaPanel Webhook URL into **Payload URL**.
+   - Content type: `application/json`.
+   - Select **Just the push event** $\to$ **Add webhook**.
+
+Now every `git push` automatically rebuilds and reloads your live server!
 
 ---
 
