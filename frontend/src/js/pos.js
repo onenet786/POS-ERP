@@ -41,7 +41,7 @@ export function renderPosView(container) {
 
         <div class="cart-customer-select">
           <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Customer Account:</label>
-          <select id="pos-customer-dropdown">
+          <select id="pos-customer-dropdown" class="form-control">
             ${AppState.customers.map(c => `
               <option value="${c.id}">${c.business_name || c.name} (${c.phone})</option>
             `).join('')}
@@ -55,6 +55,7 @@ export function renderPosView(container) {
           </div>
         </div>
 
+        <!-- CART SUMMARY & CHECKOUT -->
         <div class="cart-summary-footer">
           <div class="summary-line">
             <span>Subtotal:</span>
@@ -66,7 +67,7 @@ export function renderPosView(container) {
           </div>
           <div class="summary-line">
             <span>Discount (Rs):</span>
-            <input type="number" id="pos-discount-input" value="0" min="0" style="width:75px; text-align:right; padding:2px 6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:var(--text-main); border-radius:4px;" />
+            <input type="number" id="pos-discount-input" value="0" min="0" class="form-control" style="width:85px; text-align:right; padding:4px 8px; font-weight:600;" />
           </div>
           <div class="summary-line total">
             <span>Total Payable:</span>
