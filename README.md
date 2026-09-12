@@ -96,7 +96,7 @@ nano backend/.env
 ```
 Update your database configuration in `backend/.env` with your aaPanel PostgreSQL credentials:
 ```env
-PORT=5000
+PORT=5010
 NODE_ENV=production
 JWT_SECRET=your_super_secret_jwt_key_2026
 
@@ -105,12 +105,13 @@ PGHOST=localhost
 PGPORT=5432
 PGUSER=postgres
 PGPASSWORD=your_actual_postgres_password
-PGDATABASE=apexerppos
+PGDATABASE=bierppos
 
-COMPANY_NAME=Apex Commercial Enterprise
-COMPANY_ADDRESS=Plot 45, Industrial Area, Karachi, Pakistan
-COMPANY_TAX_ID=NTN-7492019-2
-CURRENCY=PKR
+COMPANY_NAME="OneNet Solutions"
+COMPANY_ADDRESS="Muslim Town, Lahore, Pakistan"
+COMPANY_TAX_ID="NTN-7492019-2"
+COMPANY_PHONE="+92 42 30000001"
+CURRENCY="PKR"
 ```
 *(Press `Ctrl + O` then `Enter` to save, and `Ctrl + X` to exit `nano`).*
 
@@ -121,25 +122,84 @@ chmod +x deploy/aapanel_setup.sh deploy/update.sh
 ```
 This automated script will:
 - Check Node.js and PM2.
-- Create the `apexerppos` database in PostgreSQL (if not already existing).
+- Verify PostgreSQL service (`/etc/init.d/pgsql`).
+- Auto-create the `bierppos` database in PostgreSQL.
 - Run the schema (`schema.sql`) and seed data (`seed.sql`).
 - Install all dependencies.
 - Build the production frontend bundle into `frontend/dist`.
-- Start the backend PM2 cluster service (`apexerppos-api`) on port `5000`.
+- Start the backend PM2 cluster service (`apexerppos-api`) on port `5010`.
 
-#### Step 4: Configure aaPanel Website & Nginx Reverse Proxy
-1. In your **aaPanel dashboard**, click **Website** $\to$ **Add Site**.
-2. Fill in:
-   - **Domain**: `erp.yourdomain.com` (or your server IP / domain).
+---
+
+### Part 3: Attaching Your Domain & Node.js Settings in aaPanel
+
+There are two straightforward ways to connect your domain name (e.g., `erp.yourdomain.com`) and manage Node.js in aaPanel:
+
+---
+
+#### 🌐 Method A: Using aaPanel "Node project" Manager (Recommended GUI Method)
+
+aaPanel has a dedicated **Node project** manager that handles domain binding, process supervision, and reverse proxying with one click:
+
+1. **DNS Setup**:
+   - In your domain DNS registrar (Cloudflare, Namecheap, GoDaddy, etc.), add an **A Record**:
+     - **Name / Host**: `erp` (or `@` for root domain)
+     - **Value / IPv4**: Your Ubuntu Server IP address
+     - **TTL**: Automatic (or 5 minutes)
+
+2. **Open aaPanel Node Project Manager**:
+   - In the aaPanel left sidebar, click **Website**.
+   - At the top tabs, click **Node project** (tabs are: *PHP project | Java project | Node project | Go project*).
+   - If Node.js is not yet installed in aaPanel, click **Install Node version** $\to$ choose **v20.x** or **v24.x**.
+
+3. **Add the Node Project**:
+   - Click **Add Node Project**:
+     - **Project directory**: `/www/wwwroot/POS-ERP/backend`
+     - **Project name**: `POS-ERP`
+     - **Run Opt**: Select `start` (or enter `src/server.js`)
+     - **Port**: `5010`
+     - **Run user**: `www` (or `root`)
+     - **Node version**: Select your installed Node.js version
+     - **Domain name**: Enter your domain (e.g. `erp.yourdomain.com`)
+   - Click **Submit**. aaPanel will automatically start the Node process and create the Nginx reverse proxy!
+
+4. **Enable SSL (HTTPS)**:
+   - In the Node project list, click your project's domain name or click **Settings** $\to$ **SSL**.
+   - Select **Let's Encrypt** $\to$ Check your domain $\to$ Click **Apply**.
+   - Once issued, turn on **Force HTTPS**.
+
+---
+
+#### 🌐 Method B: Using aaPanel Standard Website + Nginx Reverse Proxy (Advanced / PM2 Method)
+
+If you ran `./deploy/aapanel_setup.sh`, the backend is already managed by **PM2** on port `5010`. You can route your domain directly via aaPanel's standard website manager:
+
+1. **Add Website in aaPanel**:
+   - In aaPanel sidebar $\to$ **Website** $\to$ click **Add Site**.
+   - **Domain**: `erp.yourdomain.com` (your actual domain or subdomain).
    - **Document Root**: `/www/wwwroot/POS-ERP/frontend/dist`
-   - **FTP / Database**: Leave as is (since PostgreSQL is managed separately).
-3. Click **Submit**.
-4. In the website list, click **Settings** for the newly created site:
-   - **SSL Tab**: Apply for a free **Let's Encrypt** certificate and enable **Force HTTPS**.
-   - **Config Tab (or Reverse Proxy)**: Open `deploy/nginx_aapanel.conf` from this repo, copy its contents, paste into your aaPanel website configuration editor, and replace `erp.yourdomain.com` with your real domain.
+   - **FTP / Database**: None / Leave as is.
+   - **PHP version**: `Static` (or any PHP version).
+   - Click **Submit**.
+
+2. **Apply SSL Certificate**:
+   - In the Website list, click **Settings** for your site.
+   - Go to the **SSL** tab $\to$ Select **Let's Encrypt** $\to$ Click **Apply**.
+   - Toggle **Force HTTPS** to ON.
+
+3. **Apply the Nginx Reverse Proxy Configuration**:
+   - Still in Website **Settings**, click the **Config** tab on the left menu.
+   - Replace the configuration with the contents of **[`deploy/nginx_aapanel.conf`](file:///f:/Git-Hub/POS-ERP/deploy/nginx_aapanel.conf)**:
+     - Make sure `server_name` has your domain (`erp.yourdomain.com`).
+     - Make sure the upstream target is `127.0.0.1:5010`.
    - Click **Save**.
 
-Your ApexERP & POS Enterprise is now live at `https://erp.yourdomain.com`!
+4. **Firewall & Security in aaPanel**:
+   - In aaPanel sidebar $\to$ click **Security**:
+     - Ensure Port **80** (HTTP) and Port **443** (HTTPS) are **Open / Allowed**.
+     - Port **5010** does **NOT** need to be opened in your external firewall, because Nginx acts as the secure internal reverse-proxy to `127.0.0.1:5010`!
+
+Your ApexERP & POS Enterprise is now live and secured at `https://erp.yourdomain.com`!
 
 ---
 
