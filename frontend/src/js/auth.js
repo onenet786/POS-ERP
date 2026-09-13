@@ -32,9 +32,7 @@ export function renderUserNavWidget(onSignOut) {
       </button>
     `;
     document.getElementById('btn-open-login-modal')?.addEventListener('click', () => {
-      openLoginModal(() => {
-        if (typeof onSignOut === 'function') onSignOut();
-      });
+      openLoginModal();
     });
     return;
   }
@@ -88,7 +86,7 @@ export function renderUserNavWidget(onSignOut) {
 
   document.getElementById('btn-switch-account')?.addEventListener('click', () => {
     if (menu) menu.style.display = 'none';
-    openLoginModal(onSignOut);
+    openLoginModal();
   });
 
   document.getElementById('btn-logout-session')?.addEventListener('click', () => {
@@ -102,9 +100,14 @@ export function logoutSession(onLoggedOut) {
   localStorage.removeItem('onenet_user');
   localStorage.removeItem('apexerppos_token');
   AppState.currentUser = null;
+  _onSuccessCallback = null;
   showToast('You have been signed out.', 'info');
 
-  renderAuthPortal(onLoggedOut);
+  if (typeof onLoggedOut === 'function') {
+    onLoggedOut();
+  } else {
+    renderAuthPortal();
+  }
 }
 
 /**
@@ -488,8 +491,12 @@ function completeLogin(res) {
     startContinuousTracking();
   }
 
-  if (typeof _onSuccessCallback === 'function') {
-    _onSuccessCallback();
+  const cb = _onSuccessCallback;
+  _onSuccessCallback = null;
+  if (typeof cb === 'function') {
+    cb();
+  } else {
+    window.dispatchEvent(new CustomEvent('auth:login-success', { detail: res }));
   }
 }
 

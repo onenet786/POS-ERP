@@ -23,8 +23,15 @@ let _isWorkspaceStarted = false;
 async function bootstrap() {
   console.log('[Bin Ishaq Softs] Bootstrapping Enterprise Suite...');
 
-  // Authentication Gate Check: If no user session, show Login Portal first
-  if (!AppState.currentUser) {
+  // Global listener in case login completes without a direct callback
+  window.addEventListener('auth:login-success', async () => {
+    await startWorkspace();
+  });
+
+  // Authentication Gate Check: If no user session or token, show Login Portal first
+  if (!AppState.currentUser || !Api.getToken()) {
+    AppState.currentUser = null;
+    Api.clearToken();
     const appRoot = document.getElementById('app-root');
     if (appRoot) appRoot.style.display = 'none';
     renderAuthPortal(async () => {
@@ -91,18 +98,16 @@ async function startWorkspace() {
       }
     });
 
-    // Register PWA Service Worker with Auto-Update
+    // Register PWA Service Worker (silent background update without disruptive reloads)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then((reg) => {
           console.log('[PWA] Service Worker registered');
-          reg.update();
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             newWorker?.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('[PWA] New version detected, reloading...');
-                window.location.reload();
+                console.log('[PWA] New version ready in background.');
               }
             });
           });
