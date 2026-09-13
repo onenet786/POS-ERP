@@ -15,10 +15,20 @@ import { exportDatabaseBackup, restoreDatabaseBackup } from '../controllers/back
 import {
   getProducts,
   createProduct,
+  updateProduct,
+  deleteProduct,
   getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
   getWarehouses,
+  createWarehouse,
+  updateWarehouse,
+  deleteWarehouse,
   getBatchExpiryReport,
-  adjustStock
+  adjustStock,
+  transferStock,
+  getStockLedger
 } from '../controllers/inventory.controller.js';
 import {
   getActiveShift,
@@ -83,11 +93,24 @@ router.post('/backup/restore', restoreDatabaseBackup);
 // Dashboard & KPIs
 router.get('/reports/dashboard', getDashboardKPIs);
 
-// Inventory
+// Inventory & Multi-Warehouse Suite
 router.get('/inventory/products', getProducts);
 router.post('/inventory/products', createProduct);
+router.put('/inventory/products/:id', updateProduct);
+router.delete('/inventory/products/:id', deleteProduct);
+
 router.get('/inventory/categories', getCategories);
+router.post('/inventory/categories', createCategory);
+router.put('/inventory/categories/:id', updateCategory);
+router.delete('/inventory/categories/:id', deleteCategory);
+
 router.get('/inventory/warehouses', getWarehouses);
+router.post('/inventory/warehouses', createWarehouse);
+router.put('/inventory/warehouses/:id', updateWarehouse);
+router.delete('/inventory/warehouses/:id', deleteWarehouse);
+
+router.post('/inventory/transfer-stock', transferStock);
+router.get('/inventory/ledger', getStockLedger);
 router.get('/inventory/batches/expiry', getBatchExpiryReport);
 router.post('/inventory/adjust-stock', adjustStock);
 
