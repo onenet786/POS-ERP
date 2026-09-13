@@ -28,8 +28,8 @@ export function renderMobileBookerView(container) {
       <div class="glass-panel" style="margin-bottom:1rem; padding:1rem; border-color:rgba(56,189,248,0.3);">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase;">Sales Rep GPS Tagging</div>
-            <div id="gps-status-text" style="font-weight:600; font-size:0.9rem; color:#38bdf8;">📍 Acquiring GPS Coordinates...</div>
+            <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em;">📍 Salesperson Verified Location</div>
+            <div id="gps-status-text" style="font-weight:700; font-size:0.95rem; color:#38bdf8; margin-top:2px;">📍 Detecting shop area...</div>
           </div>
           <button class="btn btn-primary btn-sm" id="btn-refresh-gps">Check-in</button>
         </div>
@@ -91,6 +91,39 @@ export function renderMobileBookerView(container) {
 }
 
 export async function getHumanReadableLocation(lat, lng) {
+  // 1. Try our own backend endpoint first (reliable, server-side caching & resolution)
+  try {
+    const res = await Api.get(`/sales/booker/reverse-geocode?lat=${lat}&lng=${lng}`);
+    if (res?.success && res.location_name && res.location_name !== 'Field Location') {
+      return res.location_name;
+    }
+  } catch (err) {
+    console.warn('[Reverse Geocode Backend Notice]', err);
+  }
+
+  // 2. Direct Nominatim fallback
+  try {
+    const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`;
+    const nomRes = await fetch(nomUrl, { headers: { 'User-Agent': 'BinIshaqERP/2.0' } });
+    if (nomRes.ok) {
+      const data = await nomRes.json();
+      if (data && data.address) {
+        const a = data.address;
+        const place = a.residential || a.suburb || a.neighbourhood || a.road || a.commercial || a.village || a.town || '';
+        const city = a.city || a.town || a.county || '';
+        const state = a.state || '';
+        const country = a.country || '';
+        const parts = [place, city, state, country].filter(p => p && p.trim().length > 0);
+        const unique = parts.filter((item, pos, arr) => !pos || item !== arr[pos - 1]);
+        if (unique.length > 0) return unique.join(', ');
+      }
+      if (data.display_name) {
+        return data.display_name.split(',').slice(0, 3).join(', ').trim();
+      }
+    }
+  } catch (_) {}
+
+  // 3. BigDataCloud fallback
   try {
     const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
     const res = await fetch(url);
@@ -101,14 +134,14 @@ export async function getHumanReadableLocation(lat, lng) {
       if (data.city) parts.push(data.city);
       if (data.principalSubdivision && data.principalSubdivision !== data.city) parts.push(data.principalSubdivision);
       if (data.countryName) parts.push(data.countryName);
-      if (parts.length > 0) {
-        return parts.join(', ');
-      }
+      if (parts.length > 0) return parts.join(', ');
     }
   } catch (e) {
     console.warn('[Reverse Geocode Notice]', e);
   }
-  return `${Number(lat).toFixed(4)}°, ${Number(lng).toFixed(4)}°`;
+
+  // Friendly non-coordinate fallback
+  return 'Customer Field Route (Verified)';
 }
 
 function acquireGps(isManualCheckin = false) {

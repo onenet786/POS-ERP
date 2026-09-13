@@ -89,10 +89,22 @@ async function startWorkspace() {
       }
     });
 
-    // Register PWA Service Worker
+    // Register PWA Service Worker with Auto-Update
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log('[PWA] Service Worker registered'))
+        .then((reg) => {
+          console.log('[PWA] Service Worker registered');
+          reg.update();
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker?.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('[PWA] New version detected, reloading...');
+                window.location.reload();
+              }
+            });
+          });
+        })
         .catch(e => console.warn('[PWA] Service Worker registration failed:', e));
     }
 

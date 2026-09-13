@@ -17,18 +17,20 @@ cd "$(dirname "$0")/.."
 git checkout -- frontend/package-lock.json 2>/dev/null || true
 git pull origin main
 
-# 2. Update Backend dependencies, run database migrations, and restart PM2
+# 2. Rebuild Frontend bundle
+echo "[*] Building frontend production bundle..."
+cd frontend
+npm install --include=dev
+npm run build
+cd ..
+
+# 3. Update Backend dependencies, run database migrations, and restart PM2
 echo "[*] Updating backend dependencies and reloading service..."
 cd backend
 npm install --production=false
 node database/migrate.js || true
-pm2 reload ecosystem.config.cjs || pm2 start ecosystem.config.cjs --env production
-
-# 3. Rebuild Frontend bundle
-echo "[*] Rebuilding frontend assets..."
-cd ../frontend
-npm install --include=dev
-npm run build
+pm2 reload ecosystem.config.cjs || pm2 restart ecosystem.config.cjs --env production
+cd ..
 
 echo "=================================================================="
 echo " [✓] Update Complete & Reloaded with Zero Downtime!              "

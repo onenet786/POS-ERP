@@ -257,10 +257,15 @@ export async function updateBookerLocation(req, res) {
     let existing = store.booker_locations.find(b => b.user_id === userId);
     const now = new Date().toISOString();
 
+    let finalHumanLocation = human_location;
+    if (!finalHumanLocation || finalHumanLocation.includes('°') || finalHumanLocation === 'Field Location' || finalHumanLocation === 'Field Location Identified') {
+      finalHumanLocation = await reverseGeocodeCoordinates(latitude, longitude);
+    }
+
     if (existing) {
       existing.latitude = Number(latitude);
       existing.longitude = Number(longitude);
-      if (human_location) existing.human_location = human_location;
+      existing.human_location = finalHumanLocation;
       if (accuracy !== undefined) existing.accuracy = Number(accuracy);
       if (battery_level !== undefined) existing.battery_level = Number(battery_level);
       if (speed !== undefined) existing.speed = Number(speed);
@@ -277,7 +282,7 @@ export async function updateBookerLocation(req, res) {
         phone,
         latitude: Number(latitude),
         longitude: Number(longitude),
-        human_location: human_location || address || 'Field Location Identified',
+        human_location: finalHumanLocation,
         accuracy: Number(accuracy || 10.0),
         battery_level: Number(battery_level || 90),
         speed: Number(speed || 0.0),
@@ -306,7 +311,7 @@ export async function updateBookerLocation(req, res) {
               Number(latitude), Number(longitude), Number(accuracy || 10),
               Number(battery_level || 88), Number(speed || 0), status || 'CHECKED_IN',
               shop_id ? Number(shop_id) : null, shop_name || null,
-              address || null, human_location || null, userId
+              address || null, finalHumanLocation, userId
             ]
           );
         } else {
@@ -317,7 +322,8 @@ export async function updateBookerLocation(req, res) {
             [
               userId, bookerName, phone, Number(latitude), Number(longitude),
               Number(accuracy || 10), Number(battery_level || 88), Number(speed || 0),
-              status || 'CHECKED_IN', shop_id ? Number(shop_id) : null, shop_name || null, address || null, human_location || null
+              status || 'CHECKED_IN', shop_id ? Number(shop_id) : null, shop_name || null,
+              address || null, finalHumanLocation
             ]
           );
         }
@@ -339,3 +345,61 @@ export async function updateBookerLocation(req, res) {
   }
 }
 
+export async function reverseGeocodeCoordinates(lat, lng) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`;
+    const res = await fetch(nomUrl, {
+      headers: { 'User-Agent': 'BinIshaqSoftsERP/2.0 (info@binishaqsoft.com)' },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.address) {
+        const a = data.address;
+        const place = a.residential || a.suburb || a.neighbourhood || a.road || a.commercial || a.village || a.town || '';
+        const city = a.city || a.town || a.county || a.municipality || '';
+        const state = a.state || '';
+        const country = a.country || '';
+        const parts = [place, city, state, country].filter(p => p && p.trim().length > 0);
+        const unique = parts.filter((item, pos, arr) => !pos || item !== arr[pos - 1]);
+        if (unique.length > 0) {
+          return unique.join(', ');
+        }
+      }
+      if (data.display_name) {
+        return data.display_name.split(',').slice(0, 3).join(', ').trim();
+      }
+    }
+  } catch (err) {
+    try {
+      const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+      const bdcRes = await fetch(bdcUrl, { signal: AbortSignal.timeout(3500) });
+      if (bdcRes.ok) {
+        const b = await bdcRes.json();
+        const parts = [];
+        if (b.locality && b.locality !== b.city) parts.push(b.locality);
+        if (b.city) parts.push(b.city);
+        if (b.principalSubdivision && b.principalSubdivision !== b.city) parts.push(b.principalSubdivision);
+        if (b.countryName) parts.push(b.countryName);
+        if (parts.length > 0) return parts.join(', ');
+      }
+    } catch (_) {}
+  }
+  return 'Field Location Identified';
+}
+
+export async function getReverseGeocode(req, res) {
+  try {
+    const { lat, lng } = req.query;
+    if (!lat || !lng) {
+      return res.status(400).json({ success: false, message: 'lat and lng parameters are required' });
+    }
+    const locationName = await reverseGeocodeCoordinates(lat, lng);
+    res.json({ success: true, location_name: locationName });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message, location_name: 'Field Location Identified' });
+  }
+}

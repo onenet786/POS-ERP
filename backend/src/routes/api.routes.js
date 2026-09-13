@@ -44,7 +44,8 @@ import {
   createInvoice,
   getCustomers,
   getBookerLocations,
-  updateBookerLocation
+  updateBookerLocation,
+  getReverseGeocode
 } from '../controllers/sales.controller.js';
 import {
   getChartOfAccounts,
@@ -132,6 +133,7 @@ router.post('/sales/invoices', createInvoice);
 router.get('/sales/customers', getCustomers);
 router.get('/sales/booker/locations', getBookerLocations);
 router.post('/sales/booker/location', updateBookerLocation);
+router.get('/sales/booker/reverse-geocode', getReverseGeocode);
 
 // Double-Entry Accounting
 router.get('/accounting/accounts', getChartOfAccounts);
