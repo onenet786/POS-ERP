@@ -1,6 +1,7 @@
 import { AppState, formatCurrency, showToast } from './state.js';
 import { Api } from './api.js';
 import { printA4TaxInvoice } from './printService.js';
+import { openBarcodeScannerModal } from './cameraScanner.js';
 
 export async function renderSalesView(container) {
   container.innerHTML = `
@@ -10,6 +11,10 @@ export async function renderSalesView(container) {
         <p class="page-subtitle">End-to-end sales lifecycle: Quotations, Sales Orders, Challans, Invoices & FBR/ZATCA QR Codes</p>
       </div>
       <div style="display:flex; gap:0.75rem;">
+        <button class="btn btn-outline" id="btn-sales-quick-scan" style="display:inline-flex; align-items:center; gap:6px; color:#38bdf8; border-color:rgba(56,189,248,0.4); font-weight:600;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          <span>📷 Scan to Invoice</span>
+        </button>
         <button class="btn btn-primary" id="btn-create-invoice-modal">
           + New Sales Invoice
         </button>
@@ -201,6 +206,10 @@ function attachSalesEvents() {
   });
 
   document.getElementById('btn-create-invoice-modal')?.addEventListener('click', openCreateInvoiceModal);
+  document.getElementById('btn-sales-quick-scan')?.addEventListener('click', async () => {
+    await openCreateInvoiceModal();
+    document.getElementById('btn-scan-barcode-invoice')?.click();
+  });
 }
 
 function openInvoiceModal(inv) {
@@ -363,13 +372,19 @@ async function openCreateInvoiceModal() {
           </div>
 
           <!-- Product Line Items Section -->
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:8px;">
             <h4 style="font-size:0.95rem; font-weight:700; margin:0; color:var(--text-main);">
               Invoice Products & Line Items (<span id="inv-item-count">1</span>)
             </h4>
-            <button type="button" class="btn btn-outline btn-sm" id="btn-add-line-item" style="color:#38bdf8; border-color:rgba(56,189,248,0.4); font-weight:700;">
-              + Add Product Item
-            </button>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-scan-barcode-invoice" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #0284c7, #0369a1); font-weight:700;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                <span>📷 Scan Barcode</span>
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="btn-add-line-item" style="color:#38bdf8; border-color:rgba(56,189,248,0.4); font-weight:700;">
+                + Add Product Item
+              </button>
+            </div>
           </div>
 
           <!-- Products Table -->
@@ -594,6 +609,41 @@ async function openCreateInvoiceModal() {
     });
     renderItemsTable();
     calculateTotals();
+  });
+
+  // Camera Barcode Scanner trigger for invoice items
+  document.getElementById('btn-scan-barcode-invoice')?.addEventListener('click', () => {
+    openBarcodeScannerModal({
+      title: 'Invoice Camera Barcode Scanner',
+      continuous: true,
+      onScan: (barcode, matchedProd) => {
+        if (matchedProd) {
+          const existing = invoiceItems.find(i => Number(i.product_id) === Number(matchedProd.id));
+          if (existing) {
+            existing.quantity += 1;
+          } else {
+            // If the invoice only has 1 initial item and it hasn't been edited, replace it
+            if (invoiceItems.length === 1 && Number(invoiceItems[0].product_id) === Number(defaultProd.id) && invoiceItems[0].quantity === 1) {
+              invoiceItems[0] = {
+                product_id: matchedProd.id,
+                quantity: 1,
+                unit_price: Number(matchedProd.selling_price || 0),
+                tax_rate: Number(matchedProd.tax_rate || 18)
+              };
+            } else {
+              invoiceItems.push({
+                product_id: matchedProd.id,
+                quantity: 1,
+                unit_price: Number(matchedProd.selling_price || 0),
+                tax_rate: Number(matchedProd.tax_rate || 18)
+              });
+            }
+          }
+          renderItemsTable();
+          calculateTotals();
+        }
+      }
+    });
   });
 
   // Discount and Paid inputs live updates
