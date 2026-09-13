@@ -288,39 +288,165 @@ function openInvoiceModal(inv) {
 }
 
 
-function openCreateInvoiceModal() {
+async function openCreateInvoiceModal() {
+  const existing = document.getElementById('create-inv-modal');
+  if (existing) existing.remove();
+
+  // Ensure products and customers are loaded
+  if (!AppState.products || AppState.products.length === 0) {
+    try {
+      const pRes = await Api.get('/inventory/products');
+      if (pRes.success) AppState.products = pRes.products;
+    } catch (e) {
+      console.warn('Could not load products:', e);
+    }
+  }
+
+  if (!AppState.customers || AppState.customers.length === 0) {
+    try {
+      const cRes = await Api.get('/sales/customers');
+      if (cRes.success) AppState.customers = cRes.customers;
+    } catch (e) {
+      console.warn('Could not load customers:', e);
+    }
+  }
+
+  const defaultProd = AppState.products[0] || { id: 1, name: 'Standard Product', selling_price: 100, tax_rate: 18 };
+
+  // Multi-line items state
+  let invoiceItems = [
+    {
+      product_id: defaultProd.id,
+      quantity: 1,
+      unit_price: Number(defaultProd.selling_price) || 100,
+      tax_rate: Number(defaultProd.tax_rate) || 18
+    }
+  ];
+
   const modalHtml = `
-    <div class="modal-overlay" id="create-inv-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Generate New E-Invoice</h3>
-          <button class="btn-icon btn-sm" id="btn-close-create-inv">✕</button>
+    <div class="modal-overlay" id="create-inv-modal" style="backdrop-filter: blur(8px); z-index:9999;">
+      <div class="modal-content" style="max-width: 960px; width: 95%; max-height: 90vh; display:flex; flex-direction:column; padding: 1.75rem; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-bright); box-shadow: 0 25px 60px -15px rgba(0,0,0,0.8);">
+        <div class="modal-header" style="padding-bottom:1rem; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.12); color:#38bdf8; padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:700; margin-bottom:4px;">
+              🧾 MULTI-PRODUCT E-INVOICE BUILDER
+            </div>
+            <h3 class="modal-title" style="font-size:1.35rem; font-weight:800; margin:0;">Generate New Tax E-Invoice</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:3px 0 0 0;">Add multiple items, calculate tax rates, and post automated double-entry ledger entries.</p>
+          </div>
+          <button class="btn-icon btn-sm" id="btn-close-create-inv" style="border:none; cursor:pointer;">✕</button>
         </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">Customer:</label>
-            <select id="new-inv-cust" class="form-control">
-              ${AppState.customers.map(c => `<option value="${c.id}">${c.business_name || c.name}</option>`).join('')}
-            </select>
+
+        <div class="modal-body" style="overflow-y:auto; padding:1.25rem 0; flex:1;">
+          <!-- Top Row: Customer, Warehouse, Date -->
+          <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-weight:700; font-size:0.82rem;">Select Customer / Client:</label>
+              <select id="new-inv-cust" class="form-control" style="font-size:0.9rem;">
+                ${AppState.customers.map(c => `
+                  <option value="${c.id}">${c.business_name || c.name} (Balance: ${formatCurrency(c.current_balance || 0)})</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-weight:700; font-size:0.82rem;">Dispatch Warehouse:</label>
+              <select id="new-inv-wh" class="form-control" style="font-size:0.9rem;">
+                ${(AppState.warehouses || [{ id: 1, name: 'Central Logistics Hub' }]).map(w => `
+                  <option value="${w.id}">${w.name}</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-weight:700; font-size:0.82rem;">Invoice Date:</label>
+              <input type="date" id="new-inv-date" class="form-control" value="${new Date().toISOString().slice(0, 10)}" style="font-size:0.9rem;" />
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Product Item:</label>
-            <select id="new-inv-prod" class="form-control">
-              ${AppState.products.map(p => `<option value="${p.id}">${p.name} - ${formatCurrency(p.selling_price)}</option>`).join('')}
-            </select>
+
+          <!-- Product Line Items Section -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+            <h4 style="font-size:0.95rem; font-weight:700; margin:0; color:var(--text-main);">
+              Invoice Products & Line Items (<span id="inv-item-count">1</span>)
+            </h4>
+            <button type="button" class="btn btn-outline btn-sm" id="btn-add-line-item" style="color:#38bdf8; border-color:rgba(56,189,248,0.4); font-weight:700;">
+              + Add Product Item
+            </button>
           </div>
-          <div class="form-group">
-            <label class="form-label">Quantity:</label>
-            <input type="number" id="new-inv-qty" value="50" class="form-control" />
+
+          <!-- Products Table -->
+          <div style="border:1px solid var(--border-color); border-radius:10px; overflow:hidden; background:var(--bg-input); margin-bottom:1.5rem;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+              <thead>
+                <tr style="background:rgba(255,255,255,0.04); border-bottom:1px solid var(--border-color); text-align:left; color:var(--text-muted); font-size:0.75rem; text-transform:uppercase;">
+                  <th style="padding:10px 8px; text-align:center; width:35px;">#</th>
+                  <th style="padding:10px 8px;">Product Item</th>
+                  <th style="padding:10px 8px; text-align:right; width:125px;">Unit Price (Rs)</th>
+                  <th style="padding:10px 8px; text-align:center; width:95px;">Qty</th>
+                  <th style="padding:10px 8px; text-align:center; width:90px;">Tax %</th>
+                  <th style="padding:10px 8px; text-align:right; width:130px;">Line Total</th>
+                  <th style="padding:10px 8px; text-align:center; width:45px;"></th>
+                </tr>
+              </thead>
+              <tbody id="invoice-items-tbody">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
           </div>
-          <div class="form-group">
-            <label class="form-label">Cash Advance / Paid Amount:</label>
-            <input type="number" id="new-inv-paid" value="2000" class="form-control" />
+
+          <!-- Invoice Summary & Payment Terms -->
+          <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:1.5rem;">
+            <div>
+              <div class="form-group" style="margin-bottom:0.85rem;">
+                <label class="form-label" style="font-size:0.8rem; font-weight:600;">Invoice Notes / Delivery Terms:</label>
+                <textarea id="new-inv-notes" class="form-control" rows="2" placeholder="e.g. Standard 30-day payment term. Goods received in sound condition." style="font-size:0.85rem;"></textarea>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label" style="font-size:0.8rem; font-weight:600;">Overall Discount (Rs):</label>
+                  <input type="number" id="new-inv-discount" class="form-control" value="0" min="0" style="font-size:0.9rem;" />
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label" style="font-size:0.8rem; font-weight:600;">Amount Received / Paid (Rs):</label>
+                  <input type="number" id="new-inv-paid" class="form-control" value="0" min="0" style="font-size:0.9rem; font-weight:700; color:#34d399;" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Calculation Box -->
+            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:12px; padding:1.1rem; font-size:0.88rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--text-muted);">
+                <span>Items Subtotal:</span>
+                <span id="inv-calc-subtotal" style="font-weight:600; color:var(--text-main);">Rs 0.00</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--text-muted);">
+                <span>Sales Tax / VAT:</span>
+                <span id="inv-calc-tax" style="font-weight:600; color:var(--text-main);">Rs 0.00</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:8px; color:var(--text-muted);">
+                <span>Trade Discount:</span>
+                <span id="inv-calc-discount" style="font-weight:600; color:#f87171;">-Rs 0.00</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding-top:8px; border-top:1px solid var(--border-color); font-size:1.05rem; font-weight:800; color:#38bdf8;">
+                <span>Net Grand Total:</span>
+                <span id="inv-calc-total">Rs 0.00</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-top:6px; padding-top:6px; font-size:0.85rem; color:var(--text-muted);">
+                <span>Amount Paid Now:</span>
+                <span id="inv-calc-paid" style="font-weight:700; color:#34d399;">Rs 0.00</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:0.92rem; font-weight:800; color:#f87171;">
+                <span>Balance Due:</span>
+                <span id="inv-calc-balance">Rs 0.00</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="modal-footer">
+
+        <div class="modal-footer" style="padding-top:1rem; border-top:1px solid var(--border-color); display:flex; justify-content:flex-end; gap:0.75rem;">
           <button class="btn btn-outline" id="btn-dismiss-create-inv">Cancel</button>
-          <button class="btn btn-primary" id="btn-submit-new-inv">Generate Invoice</button>
+          <button class="btn btn-primary" id="btn-submit-new-inv" style="font-weight:700; padding:0.75rem 1.5rem; display:flex; align-items:center; gap:8px;">
+            <span>Generate & Post Tax Invoice</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
         </div>
       </div>
     </div>
@@ -328,32 +454,204 @@ function openCreateInvoiceModal() {
 
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   const modal = document.getElementById('create-inv-modal');
+
+  function calculateTotals() {
+    let subtotal = 0;
+    let totalTax = 0;
+
+    invoiceItems.forEach(item => {
+      const lineSub = Number(item.unit_price || 0) * Number(item.quantity || 0);
+      const lineTax = (lineSub * Number(item.tax_rate || 0)) / 100;
+      subtotal += lineSub;
+      totalTax += lineTax;
+    });
+
+    const discount = Number(document.getElementById('new-inv-discount')?.value || 0);
+    const grandTotal = Math.max(0, subtotal + totalTax - discount);
+    const paid = Number(document.getElementById('new-inv-paid')?.value || 0);
+    const balance = Math.max(0, grandTotal - paid);
+
+    const subtotalEl = document.getElementById('inv-calc-subtotal');
+    const taxEl = document.getElementById('inv-calc-tax');
+    const discountEl = document.getElementById('inv-calc-discount');
+    const totalEl = document.getElementById('inv-calc-total');
+    const paidEl = document.getElementById('inv-calc-paid');
+    const balanceEl = document.getElementById('inv-calc-balance');
+    const countEl = document.getElementById('inv-item-count');
+
+    if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+    if (taxEl) taxEl.textContent = formatCurrency(totalTax);
+    if (discountEl) discountEl.textContent = `-${formatCurrency(discount)}`;
+    if (totalEl) totalEl.textContent = formatCurrency(grandTotal);
+    if (paidEl) paidEl.textContent = formatCurrency(paid);
+    if (balanceEl) balanceEl.textContent = formatCurrency(balance);
+    if (countEl) countEl.textContent = invoiceItems.length;
+  }
+
+  function renderItemsTable() {
+    const tbody = document.getElementById('invoice-items-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = invoiceItems.map((item, idx) => {
+      const lineSub = Number(item.unit_price || 0) * Number(item.quantity || 0);
+      const lineTax = (lineSub * Number(item.tax_rate || 0)) / 100;
+      const lineTotal = lineSub + lineTax;
+
+      return `
+        <tr data-idx="${idx}" style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 8px 6px; font-weight:700; color:var(--text-muted); text-align:center;">${idx + 1}</td>
+          <td style="padding: 8px 6px;">
+            <select class="form-control item-prod-select" data-idx="${idx}" style="font-size:0.85rem; padding:0.4rem 0.6rem;">
+              ${AppState.products.map(p => `
+                <option value="${p.id}" ${p.id === Number(item.product_id) ? 'selected' : ''}>
+                  ${p.name} (Stock: ${p.stock})
+                </option>
+              `).join('')}
+            </select>
+          </td>
+          <td style="padding: 8px 6px; width: 125px;">
+            <input type="number" step="0.01" class="form-control item-price-input" data-idx="${idx}" value="${item.unit_price}" style="font-size:0.85rem; padding:0.4rem 0.6rem; text-align:right;" />
+          </td>
+          <td style="padding: 8px 6px; width: 95px;">
+            <input type="number" min="1" class="form-control item-qty-input" data-idx="${idx}" value="${item.quantity}" style="font-size:0.85rem; padding:0.4rem 0.6rem; text-align:center;" />
+          </td>
+          <td style="padding: 8px 6px; width: 90px;">
+            <input type="number" step="0.1" class="form-control item-tax-input" data-idx="${idx}" value="${item.tax_rate}" style="font-size:0.85rem; padding:0.4rem 0.6rem; text-align:center;" />
+          </td>
+          <td style="padding: 8px 6px; width: 130px; text-align:right; font-weight:700; color:var(--text-main);">
+            ${formatCurrency(lineTotal)}
+          </td>
+          <td style="padding: 8px 6px; width: 45px; text-align:center;">
+            ${invoiceItems.length > 1 ? `
+              <button type="button" class="btn-icon btn-sm text-danger btn-remove-item" data-idx="${idx}" title="Remove Item" style="padding:2px 6px; font-size:13px; border:none; background:none; cursor:pointer;">✕</button>
+            ` : ''}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach row events
+    tbody.querySelectorAll('.item-prod-select').forEach(sel => {
+      sel.addEventListener('change', (e) => {
+        const i = Number(e.target.dataset.idx);
+        const prod = AppState.products.find(p => p.id === Number(e.target.value));
+        if (prod) {
+          invoiceItems[i].product_id = prod.id;
+          invoiceItems[i].unit_price = Number(prod.selling_price || 0);
+          invoiceItems[i].tax_rate = Number(prod.tax_rate || 18);
+          renderItemsTable();
+          calculateTotals();
+        }
+      });
+    });
+
+    tbody.querySelectorAll('.item-price-input').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const i = Number(e.target.dataset.idx);
+        invoiceItems[i].unit_price = Number(e.target.value) || 0;
+        calculateTotals();
+      });
+    });
+
+    tbody.querySelectorAll('.item-qty-input').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const i = Number(e.target.dataset.idx);
+        invoiceItems[i].quantity = Number(e.target.value) || 1;
+        calculateTotals();
+      });
+    });
+
+    tbody.querySelectorAll('.item-tax-input').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const i = Number(e.target.dataset.idx);
+        invoiceItems[i].tax_rate = Number(e.target.value) || 0;
+        calculateTotals();
+      });
+    });
+
+    tbody.querySelectorAll('.btn-remove-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const i = Number(e.currentTarget.dataset.idx);
+        invoiceItems.splice(i, 1);
+        renderItemsTable();
+        calculateTotals();
+      });
+    });
+  }
+
+  // Initial table render and calculation
+  renderItemsTable();
+  calculateTotals();
+
+  // Add line item button
+  document.getElementById('btn-add-line-item')?.addEventListener('click', () => {
+    const nextProd = AppState.products[invoiceItems.length % AppState.products.length] || defaultProd;
+    invoiceItems.push({
+      product_id: nextProd.id,
+      quantity: 1,
+      unit_price: Number(nextProd.selling_price) || 100,
+      tax_rate: Number(nextProd.tax_rate) || 18
+    });
+    renderItemsTable();
+    calculateTotals();
+  });
+
+  // Discount and Paid inputs live updates
+  document.getElementById('new-inv-discount')?.addEventListener('input', calculateTotals);
+  document.getElementById('new-inv-paid')?.addEventListener('input', calculateTotals);
+
+  // Close actions
   document.getElementById('btn-close-create-inv')?.addEventListener('click', () => modal.remove());
   document.getElementById('btn-dismiss-create-inv')?.addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
 
+  // Submit invoice
   document.getElementById('btn-submit-new-inv')?.addEventListener('click', async () => {
     const custId = document.getElementById('new-inv-cust').value;
-    const prodId = document.getElementById('new-inv-prod').value;
-    const qty = document.getElementById('new-inv-qty').value;
+    const discount = document.getElementById('new-inv-discount').value;
     const paid = document.getElementById('new-inv-paid').value;
+    const notes = document.getElementById('new-inv-notes')?.value || '';
+    const submitBtn = document.getElementById('btn-submit-new-inv');
 
-    const prod = AppState.products.find(p => p.id === Number(prodId));
+    if (!invoiceItems || invoiceItems.length === 0) {
+      showToast('Please add at least one product line item to the invoice', 'warning');
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Generating & Posting Invoice...';
+    }
 
     try {
       const res = await Api.post('/sales/invoices', {
         customer_id: custId,
-        items: [{ product_id: prod.id, quantity: qty, unit_price: prod.selling_price }],
-        discount_amount: 0,
-        paid_amount: paid
+        items: invoiceItems.map(i => ({
+          product_id: Number(i.product_id),
+          quantity: Number(i.quantity) || 1,
+          unit_price: Number(i.unit_price) || 0,
+          tax_rate: Number(i.tax_rate) || 0
+        })),
+        discount_amount: Number(discount) || 0,
+        paid_amount: Number(paid) || 0,
+        notes
       });
 
       if (res.success) {
         showToast(`Invoice ${res.invoice.invoice_number} created with QR Code!`, 'success');
         modal.remove();
-        renderInvoicesTab();
+        await renderInvoicesTab();
+        // Open the generated e-invoice modal with all products and QR code
+        openInvoiceModal(res.invoice);
       }
     } catch (err) {
       showToast(err.message, 'error');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Generate & Post Tax Invoice';
+      }
     }
   });
 }
