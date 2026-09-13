@@ -126,6 +126,11 @@ async function startWorkspace() {
         if (AppState.activeModule === 'dashboard') {
           renderDashboardView(document.getElementById('content-viewport'));
         }
+      } else if (data.type === 'NEW_SALES_ORDER') {
+        showToast(`📦 New Field Order: #${data.payload.order_number} (${formatCurrency(data.payload.total_amount)}) booked!`, 'success');
+        if (AppState.activeModule === 'dashboard') {
+          renderDashboardView(document.getElementById('content-viewport'));
+        }
       } else if (data.type === 'BOOKER_LOCATION_UPDATE') {
         // Real-time telemetry: update dashboard fleet cards silently without intrusive toast spam
         if (AppState.activeModule === 'dashboard') {
@@ -417,8 +422,9 @@ function navigateTo(moduleName) {
 async function renderDashboardView(container) {
   try {
     const res = await Api.get('/reports/dashboard');
-    const { kpis, low_stock_items, expiring_batches, sales_trend, active_booker_locations } = res;
+    const { kpis, low_stock_items, expiring_batches, sales_trend, active_booker_locations, recent_sales_orders } = res;
     const bookers = active_booker_locations || [];
+    const fieldOrders = recent_sales_orders || [];
 
     const isManagerOrAdmin = AppState.currentUser?.role_id === 1 || 
                              AppState.currentUser?.role_id === 2 || 
@@ -487,6 +493,17 @@ async function renderDashboardView(container) {
           </div>
           <div class="kpi-value" style="color:#38bdf8;">${kpis.active_bookers_count || bookers.length} Active</div>
           <div class="kpi-footer positive">🟢 Real-time GPS tracking active</div>
+        </div>
+
+        <div class="kpi-card" id="kpi-card-field-orders" style="cursor:pointer;" title="Click to view all Field Orders in Sales & E-Invoicing">
+          <div class="kpi-header">
+            <span class="kpi-title">Field Orders (Today)</span>
+            <div class="kpi-icon-wrapper" style="background:rgba(16,185,129,0.12); color:#34d399;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+          </div>
+          <div class="kpi-value" style="color:#34d399;">${kpis.field_orders_today_count !== undefined ? kpis.field_orders_today_count : fieldOrders.length} Booked</div>
+          <div class="kpi-footer positive">Value: ${formatCurrency(kpis.field_orders_today_amount || 0)}</div>
         </div>
 
         <div class="kpi-card">
@@ -654,6 +671,91 @@ async function renderDashboardView(container) {
       </div>
       ` : ''}
 
+      <!-- LIVE FIELD SALES ORDERS & BOOKER BOOKINGS SECTION -->
+      <div class="glass-panel" id="section-field-orders" style="margin-bottom: 1.75rem; border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(8, 12, 20, 0.95));">
+        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.35rem;">📦</span>
+              <h3 class="panel-title" style="margin:0; font-size:1.2rem; font-weight:800; letter-spacing:-0.02em;">Recent Field Sales Orders & Booker Bookings</h3>
+              <span class="tag tag-success" style="font-weight:700; display:inline-flex; align-items:center; gap:5px;">
+                <span class="status-dot-pulse" style="width:7px; height:7px; background:#10b981;"></span>
+                <span>Live Feed</span>
+              </span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:4px 0 0 0;">
+              Real-time orders booked by sales bookers via Mobile Order Booker PWA & Web Sales Portal
+            </p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn btn-outline btn-sm" id="btn-view-all-sales-orders" style="color:#34d399; border-color:rgba(52,211,153,0.4);">
+              📋 View All in Sales & E-Invoicing
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-new-field-order" style="background:linear-gradient(135deg, #10b981, #059669); font-weight:700;">
+              ➕ Book New Order
+            </button>
+          </div>
+        </div>
+
+        <div class="data-table-container" style="margin-top:1rem;">
+          ${fieldOrders.length === 0 ? `
+            <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+              <p style="font-size:1rem; margin-bottom:0.5rem;">No field sales orders recorded yet today.</p>
+              <button class="btn btn-outline btn-sm" id="btn-empty-book-order">Open Order Booker PWA</button>
+            </div>
+          ` : `
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Date & Time</th>
+                  <th>Customer / Shop</th>
+                  <th>Booked By (Booker)</th>
+                  <th>Total Amount</th>
+                  <th>GPS Geotag</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${fieldOrders.map(o => `
+                  <tr>
+                    <td style="font-family:var(--font-mono); font-weight:700; color:#38bdf8;">${o.order_number}</td>
+                    <td style="font-size:0.82rem; color:var(--text-muted);">${new Date(o.created_at || o.order_date).toLocaleString('en-PK', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</td>
+                    <td style="font-weight:600; color:#ffffff;">
+                      🏪 ${o.customer_name}
+                    </td>
+                    <td>
+                      <span style="display:inline-flex; align-items:center; gap:5px; font-weight:600; color:#e2e8f0;">
+                        👤 ${o.salesperson_name}
+                      </span>
+                    </td>
+                    <td style="font-weight:800; color:#34d399; font-size:0.95rem;">${formatCurrency(o.total_amount)}</td>
+                    <td>
+                      ${o.geo_latitude ? `
+                        <a href="https://www.google.com/maps?q=${o.geo_latitude},${o.geo_longitude}" target="_blank" rel="noopener noreferrer" class="tag tag-info" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-size:0.75rem;">
+                          📍 ${Number(o.geo_latitude).toFixed(4)}°, ${Number(o.geo_longitude).toFixed(4)}°
+                        </a>
+                      ` : '<span style="color:var(--text-muted); font-size:0.75rem;">Counter / Web</span>'}
+                    </td>
+                    <td>
+                      <span class="tag ${o.status === 'CONFIRMED' || o.status === 'DELIVERED' ? 'tag-success' : 'tag-warning'}" style="font-weight:700;">
+                        ${o.status || 'PENDING'}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-outline btn-sm btn-convert-to-invoice" data-order-id="${o.id}" style="font-size:0.75rem; padding:3px 8px; border-color:rgba(56,189,248,0.3); color:#38bdf8;">
+                        View / Invoice
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      </div>
+
       <!-- LOW STOCK & EXPIRING BATCHES TABLES -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
         <div class="glass-panel">
@@ -716,6 +818,37 @@ async function renderDashboardView(container) {
 
     document.getElementById('btn-dashboard-gps-track')?.addEventListener('click', () => {
       document.getElementById('section-booker-fleet-tracking')?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    document.getElementById('kpi-card-field-orders')?.addEventListener('click', () => {
+      navigateTo('sales');
+      setTimeout(() => {
+        document.querySelector('.sales-tab-btn[data-tab="orders"]')?.click();
+      }, 100);
+    });
+
+    document.getElementById('btn-view-all-sales-orders')?.addEventListener('click', () => {
+      navigateTo('sales');
+      setTimeout(() => {
+        document.querySelector('.sales-tab-btn[data-tab="orders"]')?.click();
+      }, 100);
+    });
+
+    document.getElementById('btn-new-field-order')?.addEventListener('click', () => {
+      navigateTo('mobile_booker');
+    });
+
+    document.getElementById('btn-empty-book-order')?.addEventListener('click', () => {
+      navigateTo('mobile_booker');
+    });
+
+    document.querySelectorAll('.btn-convert-to-invoice')?.forEach(btn => {
+      btn.addEventListener('click', () => {
+        navigateTo('sales');
+        setTimeout(() => {
+          document.querySelector('.sales-tab-btn[data-tab="orders"]')?.click();
+        }, 100);
+      });
     });
 
     document.getElementById('btn-quick-pos-launch')?.addEventListener('click', () => {

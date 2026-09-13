@@ -104,6 +104,70 @@ export async function getDashboardKPIs(req, res) {
 
     const activeBookersCount = bookerLocations.filter(b => b.status !== 'OFFLINE').length;
 
+    // Query recent sales orders (Field Booker & Web) and today's stats
+    let recentSalesOrders = [];
+    let fieldOrdersTodayCount = 0;
+    let fieldOrdersTodayAmount = 0;
+
+    if (isPostgresActive()) {
+      try {
+        const soRes = await query(`
+          SELECT 
+            so.id, 
+            so.order_number, 
+            so.order_date, 
+            so.customer_id,
+            COALESCE(c.business_name, c.name, 'Walk-in / Retail') as customer_name,
+            so.salesperson_id,
+            COALESCE(u.full_name, 'Field Booker') as salesperson_name,
+            so.status,
+            so.total_amount,
+            so.geo_latitude,
+            so.geo_longitude,
+            so.notes,
+            so.created_at
+          FROM sales_orders so
+          LEFT JOIN customers c ON so.customer_id = c.id
+          LEFT JOIN users u ON so.salesperson_id = u.id
+          ORDER BY so.created_at DESC
+          LIMIT 10
+        `);
+        if (soRes.rows && soRes.rows.length > 0) {
+          recentSalesOrders = soRes.rows;
+        }
+
+        const statsRes = await query(`
+          SELECT 
+            COUNT(*) as count,
+            COALESCE(SUM(total_amount), 0) as total
+          FROM sales_orders
+          WHERE DATE(created_at) = CURRENT_DATE
+        `);
+        if (statsRes.rows && statsRes.rows.length > 0) {
+          fieldOrdersTodayCount = parseInt(statsRes.rows[0].count) || 0;
+          fieldOrdersTodayAmount = parseFloat(statsRes.rows[0].total) || 0;
+        }
+      } catch (soErr) {
+        console.warn('[DB] Failed to query recent sales orders for dashboard:', soErr.message);
+      }
+    }
+
+    if (recentSalesOrders.length === 0) {
+      const mockOrders = (store.sales_orders || []).slice(-10).reverse();
+      recentSalesOrders = mockOrders.map(o => {
+        const c = (store.customers || []).find(cust => cust.id === Number(o.customer_id));
+        const u = (store.users || []).find(usr => usr.id === Number(o.salesperson_id));
+        return {
+          ...o,
+          customer_name: o.customer_name || (c ? (c.business_name || c.name) : 'Retail Customer'),
+          salesperson_name: o.salesperson_name || (u ? u.full_name : 'Field Booker')
+        };
+      });
+
+      const todayOrders = (store.sales_orders || []).filter(o => o.created_at && o.created_at.startsWith(today));
+      fieldOrdersTodayCount = todayOrders.length;
+      fieldOrdersTodayAmount = todayOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+    }
 
     res.json({
       success: true,
@@ -117,9 +181,12 @@ export async function getDashboardKPIs(req, res) {
         total_stock_value: 520000,
         low_stock_count: lowStockItems.length,
         expiring_batches_count: expiringBatches.length,
-        active_bookers_count: activeBookersCount
+        active_bookers_count: activeBookersCount,
+        field_orders_today_count: fieldOrdersTodayCount,
+        field_orders_today_amount: fieldOrdersTodayAmount
       },
       active_booker_locations: bookerLocations,
+      recent_sales_orders: recentSalesOrders,
       low_stock_items: lowStockItems,
       expiring_batches: expiringBatches,
       sales_trend: salesTrend
@@ -128,3 +195,4 @@ export async function getDashboardKPIs(req, res) {
     res.status(500).json({ success: false, message: err.message });
   }
 }
+

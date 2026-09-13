@@ -9,6 +9,39 @@ export { reverseGeocodeCoordinates };
 
 export async function getSalesOrders(req, res) {
   try {
+    if (isPostgresActive()) {
+      try {
+        const result = await query(`
+          SELECT 
+            so.id, 
+            so.order_number, 
+            so.order_date, 
+            so.customer_id,
+            COALESCE(c.business_name, c.name) as customer_name,
+            so.salesperson_id,
+            COALESCE(u.full_name, 'Field Booker') as salesperson_name,
+            so.warehouse_id,
+            so.status,
+            so.subtotal,
+            so.tax_amount,
+            so.discount_amount,
+            so.total_amount,
+            so.geo_latitude,
+            so.geo_longitude,
+            so.notes,
+            so.created_at
+          FROM sales_orders so
+          LEFT JOIN customers c ON so.customer_id = c.id
+          LEFT JOIN users u ON so.salesperson_id = u.id
+          ORDER BY so.created_at DESC
+        `);
+        if (result.rows && result.rows.length > 0) {
+          return res.json({ success: true, orders: result.rows });
+        }
+      } catch (pgErr) {
+        console.warn('[DB] Failed to fetch sales orders from PostgreSQL:', pgErr.message);
+      }
+    }
     const store = getMockStore();
     res.json({ success: true, orders: store.sales_orders });
   } catch (err) {
@@ -90,6 +123,31 @@ export async function createSalesOrder(req, res) {
     };
 
     store.sales_orders.unshift(newOrder);
+
+    if (isPostgresActive()) {
+      try {
+        const orderRes = await query(
+          `INSERT INTO sales_orders 
+           (order_number, order_date, customer_id, salesperson_id, warehouse_id, status, subtotal, tax_amount, discount_amount, total_amount, geo_latitude, geo_longitude, notes)
+           VALUES ($1, $2, $3, $4, $5, 'CONFIRMED', $6, $7, $8, $9, $10, $11, $12)
+           RETURNING id`,
+          [order_number, newOrder.order_date, customer.id, newOrder.salesperson_id, newOrder.warehouse_id, subtotal, tax_amount, discount, total_amount, newOrder.geo_latitude, newOrder.geo_longitude, notes || '']
+        );
+        if (orderRes.rows[0]?.id) {
+          const soId = orderRes.rows[0].id;
+          newOrder.id = soId;
+          for (const item of processedItems) {
+            await query(
+              `INSERT INTO sales_order_items (sales_order_id, product_id, quantity, unit_price, tax_rate, tax_amount, total_price)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              [soId, item.product_id, item.quantity, item.unit_price, item.tax_rate, item.tax_amount, item.total_price]
+            ).catch(() => {});
+          }
+        }
+      } catch (pgErr) {
+        console.warn('[DB] Failed to insert sales order into PostgreSQL:', pgErr.message);
+      }
+    }
 
     broadcastEvent('NEW_SALES_ORDER', { order_number, customer: newOrder.customer_name, total: total_amount });
 
