@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, googleLogin, getProfile } from '../controllers/auth.controller.js';
+import { login, googleLogin, getAuthConfig, getProfile } from '../controllers/auth.controller.js';
 import { getCompanies, updateCompany, createCompany } from '../controllers/company.controller.js';
 import { getUsers, createUser, updateUser, getPermissionsMatrix, updatePermissionsMatrix } from '../controllers/users.controller.js';
 import {
@@ -61,6 +61,7 @@ import { authenticateToken } from '../middleware/auth.js';
 const router = express.Router();
 
 // Public / Auth
+router.get('/auth/config', getAuthConfig);
 router.post('/auth/login', login);
 router.post('/auth/google', googleLogin);
 router.get('/auth/profile', authenticateToken, getProfile);

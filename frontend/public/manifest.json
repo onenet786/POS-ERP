@@ -1,8 +1,8 @@
 {
-  "name": "ApexERP & POS Enterprise",
-  "short_name": "ApexERP",
-  "description": "Enterprise Cloud Accounting, Multi-Warehouse Inventory, POS & Field Sales Order Booker",
-  "start_url": "/",
+  "name": "OneNet Solutions Enterprise Suite",
+  "short_name": "OneNet ERP",
+  "description": "Enterprise Cloud Accounting, Multi-Company ERP, POS, HR Payroll & Field Sales Order Booker",
+  "start_url": "/#mobile_booker",
   "display": "standalone",
   "background_color": "#090d16",
   "theme_color": "#0f172a",

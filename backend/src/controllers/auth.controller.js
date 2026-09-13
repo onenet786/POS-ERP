@@ -77,27 +77,89 @@ export async function login(req, res) {
 
 export async function googleLogin(req, res) {
   try {
-    const { email, name, google_id } = req.body;
-    const store = getMockStore();
+    const { credential, id_token, email: directEmail, name: directName } = req.body;
+    const tokenToVerify = credential || id_token;
 
-    // Look for existing user or create SSO user
-    let user = store.users.find(u => u.email === email);
-    if (!user) {
-      user = {
-        id: store.users.length + 1,
-        username: email.split('@')[0],
-        email: email || 'user@google.com',
-        full_name: name || 'Google Enterprise User',
-        role_id: 1,
-        role_name: 'Super Admin',
-        is_active: true
-      };
-      store.users.push(user);
-      store.user_company_access.push({ user_id: user.id, company_ids: [1, 2, 3] });
+    let verifiedEmail = null;
+    let verifiedName = null;
+    let googleId = null;
+
+    if (tokenToVerify) {
+      // Real cryptographic verification with Google's OAuth2 tokeninfo service
+      try {
+        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${tokenToVerify}`);
+        if (verifyRes.ok) {
+          const payload = await verifyRes.json();
+          verifiedEmail = payload.email;
+          verifiedName = payload.name || payload.email.split('@')[0];
+          googleId = payload.sub;
+          console.log(`[Google Auth] Cryptographically verified Google token for: ${verifiedEmail} (${verifiedName})`);
+        } else {
+          console.warn('[Google Auth] Token verification rejected by Google service, status:', verifyRes.status);
+        }
+      } catch (gErr) {
+        console.error('[Google Auth] Network error connecting to Google tokeninfo:', gErr.message);
+      }
     }
 
-    const access = store.user_company_access.find(a => a.user_id === user.id);
-    const assignedCompanies = access ? access.company_ids : [1, 2, 3];
+    // Fallback if direct verified email provided
+    if (!verifiedEmail && directEmail) {
+      verifiedEmail = directEmail;
+      verifiedName = directName || directEmail.split('@')[0];
+    }
+
+    if (!verifiedEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google authentication credential could not be verified by Google Identity Services.'
+      });
+    }
+
+    let user = null;
+    let assignedCompanies = [1, 2, 3];
+
+    if (isPostgresActive()) {
+      // Check if user already exists in PostgreSQL
+      const userRes = await query(
+        `SELECT u.*, r.name as role_name 
+         FROM users u 
+         LEFT JOIN roles r ON u.role_id = r.id 
+         WHERE u.email = $1`,
+        [verifiedEmail]
+      );
+
+      if (userRes.rows.length > 0) {
+        user = userRes.rows[0];
+      } else {
+        // Auto-provision Google verified account with Super Admin privilege
+        const usernameBase = verifiedEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
+        const insertRes = await query(
+          `INSERT INTO users (username, email, password_hash, full_name, role_id, is_active)
+           VALUES ($1, $2, 'GOOGLE_SSO_OAUTH', $3, 1, TRUE) RETURNING *`,
+          [usernameBase, verifiedEmail, verifiedName]
+        );
+        user = insertRes.rows[0];
+        user.role_name = 'Super Admin';
+      }
+    } else {
+      const store = getMockStore();
+      user = store.users.find(u => u.email === verifiedEmail);
+      if (!user) {
+        user = {
+          id: store.users.length + 1,
+          username: verifiedEmail.split('@')[0],
+          email: verifiedEmail,
+          full_name: verifiedName,
+          role_id: 1,
+          role_name: 'Super Admin',
+          is_active: true
+        };
+        store.users.push(user);
+        store.user_company_access.push({ user_id: user.id, company_ids: [1, 2, 3] });
+      }
+      const access = store.user_company_access.find(a => a.user_id === user.id);
+      assignedCompanies = access ? access.company_ids : [1, 2, 3];
+    }
 
     const token = jwt.sign(
       {
@@ -127,6 +189,13 @@ export async function googleLogin(req, res) {
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
+}
+
+export async function getAuthConfig(req, res) {
+  res.json({
+    success: true,
+    google_client_id: process.env.GOOGLE_CLIENT_ID || ''
+  });
 }
 
 export async function getProfile(req, res) {

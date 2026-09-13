@@ -1,5 +1,6 @@
 import { AppState, formatCurrency, showToast } from './state.js';
 import { Api } from './api.js';
+import { openMobileAppModal } from './mobileAppModal.js';
 
 let localOfflineOrders = JSON.parse(localStorage.getItem('apexerppos_offline_orders') || '[]');
 
@@ -12,9 +13,14 @@ export function renderMobileBookerView(container) {
           <span class="tag tag-info" style="font-size:0.75rem;">Field Booker PWA</span>
           <h2 style="font-family:var(--font-heading); font-size:1.4rem; font-weight:700; margin-top:4px;">Mobile Order Booker</h2>
         </div>
-        <button class="btn btn-outline btn-sm" id="btn-camera-scanner">
-          📷 Scan Barcode
-        </button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-outline btn-sm" id="btn-show-qr-install" style="color:#38bdf8; border-color:rgba(56,189,248,0.4);">
+            📲 Install on Phone
+          </button>
+          <button class="btn btn-outline btn-sm" id="btn-camera-scanner">
+            📷 Scan Barcode
+          </button>
+        </div>
       </div>
 
       <!-- GPS Geo-Location Card -->
@@ -107,6 +113,10 @@ function acquireGps() {
 }
 
 function attachMobileEvents() {
+  document.getElementById('btn-show-qr-install')?.addEventListener('click', () => {
+    openMobileAppModal();
+  });
+
   document.getElementById('btn-refresh-gps')?.addEventListener('click', () => {
     acquireGps();
     showToast('Shop visit GPS coordinates updated', 'success');

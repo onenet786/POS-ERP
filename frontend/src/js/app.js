@@ -13,6 +13,7 @@ import { renderUsersView } from './users.js';
 import { renderPayrollView } from './payroll.js';
 import { renderReportsView } from './reports.js';
 import { renderBackupView } from './backup.js';
+import { openMobileAppModal } from './mobileAppModal.js';
 
 let salesChartInstance = null;
 let _isWorkspaceStarted = false;
@@ -139,6 +140,11 @@ function attachNavigation() {
     } else {
       document.exitFullscreen();
     }
+  });
+
+  // Mobile App Modal Trigger
+  document.getElementById('btn-open-mobile-app-modal')?.addEventListener('click', () => {
+    openMobileAppModal();
   });
 }
 
