@@ -4,6 +4,7 @@
 // ============================================================================
 
 import { AppState, formatCurrency } from './state.js';
+import { generateBarcodeSvg } from './barcodeService.js';
 
 export function printDocument(title, htmlBodyContent, customStyles = '') {
   // Remove existing print iframes if any
@@ -447,46 +448,99 @@ export function printA4TaxInvoice(inv) {
   printDocument(`TaxInvoice_${invoiceNo}`, html, styles);
 }
 
-// Barcode Sticker Sheet Generator (3x4 or 3x8 Grid)
-export function printBarcodeStickers(product, count = 12) {
+// Barcode Sticker Sheet Generator (3x4 or 3x8 Grid) with Real Code 128 Barcodes
+export function printBarcodeStickers(product, count = 12, format = 'a4_3x8') {
   const company = AppState.activeCompany || { name: 'OneNet Solutions' };
+  const barcodeSvg = generateBarcodeSvg(product.barcode || product.sku || '896400010101', {
+    width: 1.5,
+    height: 36,
+    fontSize: 11,
+    margin: 2
+  });
 
-  const styles = `
-    @page { size: A4; margin: 8mm; }
-    body { font-family: monospace; }
-    .sticker-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6mm;
+  const isThermalRoll = format === 'thermal_roll';
+
+  const styles = isThermalRoll ? `
+    @page { size: 50mm 30mm; margin: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 2mm;
+      box-sizing: border-box;
+      background: #ffffff;
+      color: #000000;
     }
-    .sticker {
-      border: 1px dashed #333;
-      padding: 8px 6px;
+    .thermal-label {
+      width: 46mm;
+      height: 26mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
       text-align: center;
       page-break-inside: avoid;
     }
-    .st-title { font-weight: bold; font-size: 11px; }
-    .st-name { font-size: 10px; margin: 2px 0; overflow: hidden; white-space: nowrap; }
-    .st-bars { font-size: 20px; letter-spacing: 3px; font-weight: bold; margin: 3px 0; }
-    .st-code { font-size: 9px; }
-    .st-price { font-weight: bold; font-size: 12px; margin-top: 2px; }
+    .st-title { font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .st-name { font-size: 9px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 44mm; }
+    .st-barcode { width: 100%; display: flex; justify-content: center; }
+    .st-barcode svg { width: 42mm; height: 12mm; }
+    .st-price { font-weight: 800; font-size: 11px; }
+  ` : `
+    @page { size: A4; margin: 8mm; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #ffffff;
+      color: #000000;
+    }
+    .sticker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5mm;
+    }
+    .sticker {
+      border: 1px dashed #666;
+      border-radius: 4px;
+      padding: 6px 8px;
+      text-align: center;
+      page-break-inside: avoid;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      height: 32mm;
+      box-sizing: border-box;
+    }
+    .st-title { font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #000; }
+    .st-name { font-size: 9.5px; font-weight: 600; margin: 1px 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 58mm; color: #111; }
+    .st-barcode { width: 100%; margin: 2px 0; display: flex; justify-content: center; }
+    .st-barcode svg { width: 54mm; height: 13mm; display: block; }
+    .st-price { font-weight: 800; font-size: 12px; color: #000; }
   `;
 
-  const html = `
+  const html = isThermalRoll ? `
+    ${Array.from({ length: count }).map(() => `
+      <div class="thermal-label">
+        <div class="st-title">${company.name || 'OneNet Solutions'}</div>
+        <div class="st-name">${product.name.slice(0, 26)}</div>
+        <div class="st-barcode">${barcodeSvg}</div>
+        <div class="st-price">${formatCurrency(product.selling_price)}</div>
+      </div>
+    `).join('')}
+  ` : `
     <div class="sticker-grid">
       ${Array.from({ length: count }).map(() => `
         <div class="sticker">
           <div class="st-title">${company.name || 'OneNet Solutions'}</div>
-          <div class="st-name">${product.name.slice(0, 24)}</div>
-          <div class="st-bars">||| | |||| | ||</div>
-          <div class="st-code">${product.barcode || '896400010101'}</div>
+          <div class="st-name">${product.name.slice(0, 26)}</div>
+          <div class="st-barcode">${barcodeSvg}</div>
           <div class="st-price">${formatCurrency(product.selling_price)}</div>
         </div>
       `).join('')}
     </div>
   `;
 
-  printDocument(`Barcode_Sheet_${product.sku || 'ITEM'}`, html, styles);
+  printDocument(`Barcode_Labels_${product.sku || 'ITEM'}`, html, styles);
 }
 
 // Official Employee Payslip Generator

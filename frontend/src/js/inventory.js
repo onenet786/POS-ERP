@@ -1,6 +1,7 @@
 import { AppState, formatCurrency, showToast } from './state.js';
 import { Api } from './api.js';
 import { printBarcodeStickers } from './printService.js';
+import { generateBarcodeSvg } from './barcodeService.js';
 
 let activeCategoryFilter = 'ALL';
 let currentActiveTab = 'stock-list';
@@ -1102,43 +1103,86 @@ function openStockAdjustModal() {
  * ============================================================================
  */
 function openBarcodeLabelsModal() {
-  const p = AppState.products[0] || { name: 'Sample Item', barcode: '896400010101', selling_price: 150 };
+  const p = AppState.products[0] || { name: 'Sample Item', barcode: '896400010101', selling_price: 150, sku: 'ITM-001' };
+
+  function renderLabelCardsHtml(prod, count = 6) {
+    const company = AppState.activeCompany || { name: 'OneNet Solutions' };
+    const barcodeSvg = generateBarcodeSvg(prod.barcode || prod.sku || '896400010101', {
+      width: 1.4,
+      height: 34,
+      fontSize: 11,
+      margin: 2
+    });
+
+    return Array.from({ length: count }).map(() => `
+      <div style="border:1px dashed #64748b; border-radius:6px; padding:8px 6px; text-align:center; background:#ffffff; color:#0f172a; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        <div style="font-weight:800; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#0f172a;">${company.name || 'ONENET SOLUTIONS'}</div>
+        <div style="font-size:9.5px; font-weight:600; margin:1px 0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:#334155;">${prod.name.slice(0, 24)}</div>
+        <div style="margin:2px 0; display:flex; justify-content:center; width:100%;">
+          ${barcodeSvg}
+        </div>
+        <div style="font-weight:800; font-size:11.5px; color:#0f172a; margin-top:1px;">${formatCurrency(prod.selling_price)}</div>
+      </div>
+    `).join('');
+  }
+
   const modalHtml = `
-    <div class="modal-overlay" id="barcode-labels-modal">
-      <div class="modal-content" style="max-width: 650px;">
-        <div class="modal-header">
-          <h3 class="modal-title">Barcode Label Designer & Sheet Printing</h3>
-          <button class="btn-icon btn-sm" id="btn-close-label-modal">✕</button>
+    <div class="modal-overlay" id="barcode-labels-modal" style="backdrop-filter: blur(8px); z-index:9999;">
+      <div class="modal-content" style="max-width: 680px; width:95%; border-radius:16px; background:var(--bg-card); border:1px solid var(--border-bright);">
+        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.12); color:#38bdf8; padding:2px 8px; border-radius:20px; font-size:0.72rem; font-weight:700; margin-bottom:3px;">
+              ⚡ OPTICAL CODE 128 ENGINE
+            </div>
+            <h3 class="modal-title" style="font-size:1.25rem; font-weight:800; margin:0;">Barcode Label Designer & Sheet Printing</h3>
+          </div>
+          <button class="btn-icon btn-sm" id="btn-close-label-modal" style="border:none; cursor:pointer;">✕</button>
         </div>
-        <div class="modal-body">
-          <div class="form-group" style="margin-bottom:1rem;">
-            <label class="form-label">Select Product for Label Sheet:</label>
-            <select id="label-product-picker" class="form-control">
-              ${AppState.products.map(prod => `
-                <option value="${prod.id}">${prod.name} (${prod.barcode || prod.sku})</option>
-              `).join('')}
-            </select>
+        <div class="modal-body" style="padding:1.25rem;">
+          <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-weight:700; font-size:0.8rem;">Select Product for Labels:</label>
+              <select id="label-product-picker" class="form-control" style="font-size:0.85rem;">
+                ${AppState.products.map(prod => `
+                  <option value="${prod.id}">${prod.name} (${prod.barcode || prod.sku})</option>
+                `).join('')}
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-weight:700; font-size:0.8rem;">Sheet Format:</label>
+              <select id="label-format-picker" class="form-control" style="font-size:0.85rem;">
+                <option value="a4_3x8">A4 Sheet 3×8 (24/page)</option>
+                <option value="a4_2x5">A4 Sheet 2×5 (10/page)</option>
+                <option value="thermal_roll">Thermal Roll (50×30mm)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label" style="font-weight:700; font-size:0.8rem;">Sticker Count:</label>
+              <select id="label-count-picker" class="form-control" style="font-size:0.85rem;">
+                <option value="6">6 Labels</option>
+                <option value="12" selected>12 Labels</option>
+                <option value="24">24 Labels (Full Page)</option>
+                <option value="48">48 Labels (2 Pages)</option>
+              </select>
+            </div>
           </div>
 
-          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">
-            Preview for thermal adhesive rolls or standard 3x8 A4 label sheets:
-          </p>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <span style="font-size:0.82rem; color:var(--text-muted);">
+              Live 100% Scannable Code 128 Vector Preview:
+            </span>
+            <span class="tag tag-success" style="font-size:0.72rem; padding:2px 8px;">
+              ✓ Optical Laser & Camera Compatible
+            </span>
+          </div>
 
-          <div id="label-sheet-preview" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; padding:15px; background:#ffffff; color:#000000; border-radius:6px; margin:10px 0;">
-            ${[1, 2, 3, 4, 5, 6].map(() => `
-              <div style="border:1px dashed #333; padding:8px; text-align:center; font-family:monospace;">
-                <div style="font-weight:bold; font-size:11px;">ONENET SOLUTIONS</div>
-                <div style="font-size:10px; margin:2px 0;">${p.name.slice(0, 22)}</div>
-                <div style="font-weight:bold; font-size:18px; letter-spacing:3px; margin:4px 0;">||| | |||| | ||</div>
-                <div style="font-size:9px;">${p.barcode || p.sku}</div>
-                <div style="font-weight:bold; font-size:12px; margin-top:2px;">${formatCurrency(p.selling_price)}</div>
-              </div>
-            `).join('')}
+          <div id="label-sheet-preview" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; padding:12px; background:#f8fafc; border:1px solid var(--border-color); border-radius:10px; max-height:360px; overflow-y:auto;">
+            ${renderLabelCardsHtml(p, 6)}
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:0.75rem;">
           <button class="btn btn-outline" id="btn-dismiss-label">Close</button>
-          <button class="btn btn-primary" id="btn-print-labels">🖨️ Print Label Sheet</button>
+          <button class="btn btn-primary" id="btn-print-labels" style="font-weight:700;">🖨️ Print Label Sheet</button>
         </div>
       </div>
     </div>
@@ -1148,27 +1192,27 @@ function openBarcodeLabelsModal() {
   const modal = document.getElementById('barcode-labels-modal');
   document.getElementById('btn-close-label-modal')?.addEventListener('click', () => modal.remove());
   document.getElementById('btn-dismiss-label')?.addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
 
-  document.getElementById('label-product-picker')?.addEventListener('change', (e) => {
-    const selected = AppState.products.find(prod => prod.id === Number(e.target.value)) || p;
+  const updatePreview = () => {
+    const selId = document.getElementById('label-product-picker')?.value;
+    const selected = AppState.products.find(prod => prod.id === Number(selId)) || p;
     const preview = document.getElementById('label-sheet-preview');
     if (preview) {
-      preview.innerHTML = [1, 2, 3, 4, 5, 6].map(() => `
-        <div style="border:1px dashed #333; padding:8px; text-align:center; font-family:monospace;">
-          <div style="font-weight:bold; font-size:11px;">ONENET SOLUTIONS</div>
-          <div style="font-size:10px; margin:2px 0;">${selected.name.slice(0, 22)}</div>
-          <div style="font-weight:bold; font-size:18px; letter-spacing:3px; margin:4px 0;">||| | |||| | ||</div>
-          <div style="font-size:9px;">${selected.barcode || selected.sku}</div>
-          <div style="font-weight:bold; font-size:12px; margin-top:2px;">${formatCurrency(selected.selling_price)}</div>
-        </div>
-      `).join('');
+      preview.innerHTML = renderLabelCardsHtml(selected, 6);
     }
-  });
+  };
+
+  document.getElementById('label-product-picker')?.addEventListener('change', updatePreview);
 
   document.getElementById('btn-print-labels')?.addEventListener('click', () => {
     const selId = document.getElementById('label-product-picker')?.value;
     const selected = AppState.products.find(prod => prod.id === Number(selId)) || p;
-    printBarcodeStickers(selected, 12);
+    const count = Number(document.getElementById('label-count-picker')?.value || 12);
+    const format = document.getElementById('label-format-picker')?.value || 'a4_3x8';
+    printBarcodeStickers(selected, count, format);
   });
 }
 
