@@ -263,7 +263,7 @@ function exportCurrentReportCsv(activeTab) {
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `OneNet_${activeTab}_Report.csv`);
+  link.setAttribute("download", `BinIshaq_${activeTab}_Report.csv`);
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -274,7 +274,7 @@ function printCurrentReport(activeTab) {
   const reportEl = document.getElementById('printable-report-body');
   if (!reportEl) return;
 
-  const title = `OneNet_Report_${activeTab.toUpperCase()}`;
+  const title = `BinIshaq_Report_${activeTab.toUpperCase()}`;
   const styles = `
     @page { size: A4 portrait; margin: 12mm; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #000; padding: 10px; }

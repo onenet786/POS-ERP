@@ -169,7 +169,7 @@ function attachNavigation() {
       deferredInstallPrompt.prompt();
       deferredInstallPrompt.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === 'accepted') {
-          showToast('Thank you! OneNet ERP is now installing.', 'success');
+          showToast('Thank you! Bin Ishaq Softs Enterprise Suite is now installing.', 'success');
         }
         deferredInstallPrompt = null;
       });

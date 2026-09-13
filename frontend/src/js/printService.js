@@ -143,7 +143,7 @@ export function printThermalReceipt(transaction) {
   const html = `
     <div>
       <div class="text-center">
-        <div class="header-title">${company.name || 'OneNet Solutions'}</div>
+        <div class="header-title">${company.name || 'Bin Ishaq Softs'}</div>
         <div class="header-sub">${company.legal_name || 'Enterprise Suite'}</div>
         <div class="header-sub">${company.address || 'Muslim Town, Lahore, Pakistan'}</div>
         <div class="header-sub">Tel: ${company.phone || '+92 300 1234567'} | ${company.tax_id || 'NTN: 7492019-2'}</div>
@@ -373,7 +373,7 @@ export function printA4TaxInvoice(inv) {
     <div>
       <div class="header-box">
         <div>
-          <div class="brand-name">${company.name || 'OneNet Solutions'}</div>
+          <div class="brand-name">${company.name || 'Bin Ishaq Softs'}</div>
           <div class="brand-subtitle">${company.legal_name || 'Enterprise Suite'}</div>
           <div class="brand-meta">${company.address || 'Muslim Town, Lahore, Pakistan'}</div>
           <div class="brand-meta">Tel: ${company.phone || '+92 300 1234567'} | ${company.tax_id || 'NTN: 7492019-2'} ${company.strn ? '| ' + company.strn : ''}</div>

@@ -80,7 +80,7 @@ export function renderBackupView(container) {
           <tbody>
             <tr>
               <td>Today, 02:00:00 AM</td>
-              <td><code>OneNet-Automated-Daily-2026-09-13.json</code></td>
+              <td><code>BinIshaq-Automated-Daily-2026-09-13.json</code></td>
               <td>Scheduled Full Dump</td>
               <td>1,248 Records</td>
               <td><span style="color:#34d399;">✓ SHA-256 Verified</span></td>
@@ -88,7 +88,7 @@ export function renderBackupView(container) {
             </tr>
             <tr>
               <td>Yesterday, 02:00:00 AM</td>
-              <td><code>OneNet-Automated-Daily-2026-09-12.json</code></td>
+              <td><code>BinIshaq-Automated-Daily-2026-09-12.json</code></td>
               <td>Scheduled Full Dump</td>
               <td>1,192 Records</td>
               <td><span style="color:#34d399;">✓ SHA-256 Verified</span></td>
