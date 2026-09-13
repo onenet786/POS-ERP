@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { query, getMockStore, isPostgresActive } from '../config/db.js';
+import { broadcastEvent } from '../server.js';
 
 export async function getUsers(req, res) {
   try {
@@ -147,6 +148,15 @@ export async function updateUser(req, res) {
           await query('INSERT INTO user_company_access (user_id, company_id) VALUES ($1, $2)', [id, cid]);
         }
       }
+
+      if (is_active === false) {
+        broadcastEvent('FORCE_LOGOUT_USER', {
+          user_id: parseInt(id),
+          reason: 'ACCOUNT_DISABLED',
+          message: 'Account Disabled: Your enterprise user access has been deactivated.'
+        });
+      }
+
       return res.json({ success: true, message: 'User updated successfully' });
     }
 
@@ -168,6 +178,14 @@ export async function updateUser(req, res) {
       } else {
         store.user_company_access.push({ user_id: user.id, company_ids });
       }
+    }
+
+    if (is_active === false) {
+      broadcastEvent('FORCE_LOGOUT_USER', {
+        user_id: parseInt(id),
+        reason: 'ACCOUNT_DISABLED',
+        message: 'Account Disabled: Your enterprise user access has been deactivated.'
+      });
     }
 
     res.json({ success: true, user, message: 'User updated successfully' });

@@ -30,6 +30,13 @@ async function bootstrap() {
     await startWorkspace();
   });
 
+  // Global listener for forced logout (e.g. account deactivated by admin)
+  window.addEventListener('auth:force-logout', (e) => {
+    _isWorkspaceStarted = false;
+    showToast(e.detail?.message || 'Your account has been deactivated by an administrator.', 'error');
+    logoutSession();
+  });
+
   // Authentication Gate Check: If no user session or token, show Login Portal first
   if (!AppState.currentUser || !Api.getToken()) {
     AppState.currentUser = null;
@@ -40,6 +47,31 @@ async function bootstrap() {
       await startWorkspace();
     });
     return;
+  }
+
+  // Live profile verification with backend to ensure account is active and not disabled
+  try {
+    const profileRes = await Api.get('/auth/profile');
+    if (profileRes.success && profileRes.user) {
+      if (profileRes.user.is_active === false) {
+        showToast('Account Disabled: Your enterprise user access has been deactivated.', 'error');
+        logoutSession();
+        return;
+      }
+      AppState.currentUser = profileRes.user;
+      localStorage.setItem('onenet_user', JSON.stringify(profileRes.user));
+    }
+  } catch (err) {
+    if (
+      err.message?.toLowerCase().includes('deactivated') ||
+      err.message?.toLowerCase().includes('disabled') ||
+      err.message?.includes('403') ||
+      err.message?.includes('401')
+    ) {
+      showToast(err.message || 'Account Disabled: Your session has been revoked.', 'error');
+      logoutSession();
+      return;
+    }
   }
 
   await startWorkspace();
@@ -101,6 +133,13 @@ async function startWorkspace() {
         }
       } else if (data.type === 'MANUFACTURING_COMPLETED') {
         showToast(`⚙️ Assembly Completed: ${data.payload.quantity} units of ${data.payload.product}`, 'success');
+      } else if (data.type === 'FORCE_LOGOUT_USER') {
+        if (AppState.currentUser?.id === data.payload.user_id) {
+          showToast(data.payload.message || 'Your account has been deactivated by an administrator.', 'error');
+          setTimeout(() => {
+            logoutSession();
+          }, 800);
+        }
       }
     });
 

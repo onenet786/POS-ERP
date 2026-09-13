@@ -31,6 +31,18 @@ export class Api {
       const res = await fetch(url, { ...options, headers });
       const data = await res.json();
       if (!res.ok) {
+        if (
+          res.status === 403 &&
+          (data.code === 'ACCOUNT_DISABLED' ||
+           data.message?.toLowerCase().includes('deactivated') ||
+           data.message?.toLowerCase().includes('disabled'))
+        ) {
+          this.clearToken();
+          localStorage.removeItem('onenet_user');
+          window.dispatchEvent(new CustomEvent('auth:force-logout', {
+            detail: { message: data.message || 'Account Disabled: Access has been revoked.' }
+          }));
+        }
         throw new Error(data.message || `Request failed with status ${res.status}`);
       }
       return data;

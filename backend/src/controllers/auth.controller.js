@@ -42,6 +42,15 @@ export async function login(req, res) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
+    // Enforce account active status
+    if (user.is_active === false || user.is_active === 'false' || user.is_active === 0) {
+      return res.status(403).json({
+        success: false,
+        code: 'ACCOUNT_DISABLED',
+        message: 'Account Disabled: Your enterprise user access has been deactivated by an administrator.'
+      });
+    }
+
     const store = getMockStore();
     const access = store.user_company_access.find(a => a.user_id === user.id);
     const assignedCompanies = access ? access.company_ids : [1];
@@ -132,6 +141,13 @@ export async function googleLogin(req, res) {
 
       if (userRes.rows.length > 0) {
         user = userRes.rows[0];
+        if (user.is_active === false || user.is_active === 'false' || user.is_active === 0) {
+          return res.status(403).json({
+            success: false,
+            code: 'ACCOUNT_DISABLED',
+            message: 'Account Disabled: Your enterprise user access has been deactivated by an administrator.'
+          });
+        }
       } else {
         // Auto-provision Google verified account with Super Admin privilege
         const usernameBase = verifiedEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_');
@@ -201,6 +217,45 @@ export async function getAuthConfig(req, res) {
 }
 
 export async function getProfile(req, res) {
-  res.json({ success: true, user: req.user });
+  try {
+    let user = null;
+    if (isPostgresActive()) {
+      const result = await query(
+        `SELECT u.id, u.username, u.email, u.full_name, u.phone, u.role_id, r.name as role_name, u.is_active
+         FROM users u
+         LEFT JOIN roles r ON u.role_id = r.id
+         WHERE u.id = $1`,
+        [req.user.id]
+      );
+      if (result.rows.length > 0) user = result.rows[0];
+    } else {
+      const store = getMockStore();
+      user = store.users.find(u => u.id === req.user.id);
+    }
+
+    if (!user || user.is_active === false || user.is_active === 'false' || user.is_active === 0) {
+      return res.status(403).json({
+        success: false,
+        code: 'ACCOUNT_DISABLED',
+        message: 'Account Disabled: Your enterprise user access has been deactivated by an administrator.'
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        full_name: user.full_name,
+        email: user.email,
+        phone: user.phone || '',
+        role_id: Number(user.role_id) || 3,
+        role_name: user.role_name || (user.role_id === 1 ? 'Super Admin' : (user.role_id === 2 ? 'Store Manager' : (user.role_id === 4 ? 'Field Sales Booker' : 'Cashier'))),
+        is_active: Boolean(user.is_active)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 }
 
