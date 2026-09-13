@@ -1,5 +1,6 @@
 import { AppState, showToast } from './state.js';
 import { Api } from './api.js';
+import { trackBookerLocation, startContinuousTracking } from './gpsTracker.js';
 
 let _onSuccessCallback = null;
 let _googleClientId = null;
@@ -480,10 +481,18 @@ function completeLogin(res) {
   const appRoot = document.getElementById('app-root');
   if (appRoot) appRoot.style.display = 'flex';
 
+  // Automatically sync live GPS location when a Field Booker logs in
+  const isBooker = res.user?.role_id === 4 || (res.user?.role_name || '').toLowerCase().includes('booker');
+  if (isBooker) {
+    trackBookerLocation({ showNotification: true, force: true });
+    startContinuousTracking();
+  }
+
   if (typeof _onSuccessCallback === 'function') {
     _onSuccessCallback();
   }
 }
+
 
 /**
  * Modal variant for switching account without leaving workspace

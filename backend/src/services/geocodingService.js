@@ -3,10 +3,7 @@ const geocodeCache = new Map();
 export function normalizeAddress(a, displayName = '') {
   if (!a) {
     if (!displayName) return 'Field Location Identified';
-    let clean = displayName
-      .replace(/Al-Rehman Garden Phase-7/gi, 'Al Rehman Garden')
-      .replace(/Al-Rehman/gi, 'Al Rehman');
-    return clean.split(',').slice(0, 4).join(', ').trim();
+    return displayName.split(',').slice(0, 4).join(', ').trim();
   }
 
   // 1. House number / Building
@@ -18,10 +15,6 @@ export function normalizeAddress(a, displayName = '') {
 
   // 3. Society / Neighborhood / Suburb
   let neighborhood = a.residential || a.suburb || a.neighbourhood || a.quarter || '';
-  neighborhood = neighborhood.replace(/Al-Rehman/gi, 'Al Rehman');
-  if (neighborhood.includes('Al Rehman Garden')) {
-    neighborhood = 'Al Rehman Garden';
-  }
 
   // 4. Town / Locality (omit redundant tehsil if major society is already identified)
   let town = a.town || a.village || '';
@@ -30,10 +23,8 @@ export function normalizeAddress(a, displayName = '') {
   }
 
   // 5. Metropolitan City / District
-  let city = a.city || '';
-  if (!city && a.county) city = a.county.replace(/\s+(District|Division)/gi, '').trim();
-  if (!city && a.city_district) city = a.city_district.replace(/\s+District/gi, '').trim();
-  if (!city && a.municipality) city = a.municipality.replace(/\s+Tehsil/gi, '').trim();
+  let city = a.city || a.county || a.state_district || a.city_district || a.municipality || '';
+  city = city.replace(/\s+(City Tehsil|Sadar Tehsil|Tehsil|District|Division)/gi, '').trim();
 
   // 6. Province / State
   const state = a.state || '';

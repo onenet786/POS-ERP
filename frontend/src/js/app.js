@@ -14,6 +14,8 @@ import { renderPayrollView } from './payroll.js';
 import { renderReportsView } from './reports.js';
 import { renderBackupView } from './backup.js';
 import { openMobileAppModal } from './mobileAppModal.js';
+import { trackBookerLocation, startContinuousTracking } from './gpsTracker.js';
+
 
 let salesChartInstance = null;
 let _isWorkspaceStarted = false;
@@ -123,6 +125,12 @@ async function startWorkspace() {
   // Route determination based on role
   const userRole = AppState.currentUser?.role_name?.toLowerCase() || '';
   const isBooker = AppState.currentUser?.role_id === 4 || userRole.includes('booker');
+
+  // Automatically start live GPS & Network location sync for Field Booker sessions
+  if (isBooker) {
+    trackBookerLocation({ showNotification: true, force: true });
+    startContinuousTracking();
+  }
 
   let initialHash = window.location.hash.slice(1);
   if (!initialHash || (isBooker && initialHash === 'dashboard')) {
@@ -494,11 +502,7 @@ async function renderDashboardView(container) {
                 </div>
                 <div style="font-size:0.95rem; font-weight:700; color:#ffffff; line-height:1.4;">
                   ${(() => {
-                    let loc = b.human_location || b.address || '';
-                    loc = loc
-                      .replace(/Al-Rehman Garden Phase-7/gi, 'Al Rehman Garden')
-                      .replace(/Al-Rehman/gi, 'Al Rehman')
-                      .replace(/Batapur, /gi, '');
+                    const loc = b.human_location || b.address || '';
                     if (loc.startsWith('Store Counter')) return 'Field Location Identified';
                     return loc || 'Field Location Identified';
                   })()}

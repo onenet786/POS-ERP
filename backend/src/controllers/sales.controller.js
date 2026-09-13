@@ -253,7 +253,10 @@ export async function updateBookerLocation(req, res) {
       status,
       shop_id,
       shop_name,
-      address
+      address,
+      user_id,
+      booker_name,
+      phone: bodyPhone
     } = req.body;
 
     if (latitude === undefined || longitude === undefined) {
@@ -261,9 +264,9 @@ export async function updateBookerLocation(req, res) {
     }
 
     const store = getMockStore();
-    const userId = req.user?.id || 4;
-    const bookerName = req.user?.full_name || 'Hamza Khan (Field Booker)';
-    const phone = req.user?.phone || '+92 300 9876543';
+    const userId = Number(user_id || req.user?.id || 4);
+    const bookerName = booker_name || req.user?.full_name || 'Hamza Khan (Field Booker)';
+    const phone = bodyPhone || req.user?.phone || '+92 300 9876543';
 
     if (!store.booker_locations) {
       store.booker_locations = [];
@@ -279,7 +282,6 @@ export async function updateBookerLocation(req, res) {
       finalHumanLocation === 'Field Location' ||
       finalHumanLocation === 'Field Location Identified' ||
       finalHumanLocation.startsWith('Store Counter') ||
-      finalHumanLocation.includes('Al-Rehman Garden') ||
       finalHumanLocation === 'Live Field Visit'
     ) {
       finalHumanLocation = await reverseGeocodeCoordinates(latitude, longitude);

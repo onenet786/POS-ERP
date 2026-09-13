@@ -2,6 +2,8 @@ import { AppState, formatCurrency, showToast } from './state.js';
 import { Api } from './api.js';
 import { openMobileAppModal } from './mobileAppModal.js';
 import { openBarcodeScannerModal } from './cameraScanner.js';
+import { trackBookerLocation, startContinuousTracking } from './gpsTracker.js';
+
 
 let localOfflineOrders = JSON.parse(localStorage.getItem('apexerppos_offline_orders') || '[]');
 
@@ -87,17 +89,16 @@ export function renderMobileBookerView(container) {
     </div>
   `;
 
-  acquireGps();
+  trackBookerLocation();
+  startContinuousTracking();
   attachMobileEvents();
 }
+
 
 export function normalizeAddressClient(a, displayName = '') {
   if (!a) {
     if (!displayName) return 'Customer Field Route (Verified)';
-    let clean = displayName
-      .replace(/Al-Rehman Garden Phase-7/gi, 'Al Rehman Garden')
-      .replace(/Al-Rehman/gi, 'Al Rehman');
-    return clean.split(',').slice(0, 4).join(', ').trim();
+    return displayName.split(',').slice(0, 4).join(', ').trim();
   }
 
   const houseNumber = a.house_number || a.street_number || '';
@@ -105,20 +106,14 @@ export function normalizeAddressClient(a, displayName = '') {
   if (road.toLowerCase().includes('unnamed')) road = '';
 
   let neighborhood = a.residential || a.suburb || a.neighbourhood || a.quarter || '';
-  neighborhood = neighborhood.replace(/Al-Rehman/gi, 'Al Rehman');
-  if (neighborhood.includes('Al Rehman Garden')) {
-    neighborhood = 'Al Rehman Garden';
-  }
 
   let town = a.town || a.village || '';
   if (neighborhood && (neighborhood.includes('Garden') || neighborhood.includes('Town') || neighborhood.includes('DHA') || neighborhood.includes('Gulberg') || neighborhood.includes('Model'))) {
     town = '';
   }
 
-  let city = a.city || '';
-  if (!city && a.county) city = a.county.replace(/\s+(District|Division)/gi, '').trim();
-  if (!city && a.city_district) city = a.city_district.replace(/\s+District/gi, '').trim();
-  if (!city && a.municipality) city = a.municipality.replace(/\s+Tehsil/gi, '').trim();
+  let city = a.city || a.county || a.state_district || a.city_district || a.municipality || '';
+  city = city.replace(/\s+(City Tehsil|Sadar Tehsil|Tehsil|District|Division)/gi, '').trim();
 
   const state = a.state || '';
   const country = a.country || '';
@@ -297,8 +292,9 @@ function attachMobileEvents() {
   });
 
   document.getElementById('btn-refresh-gps')?.addEventListener('click', () => {
-    acquireGps(true);
+    trackBookerLocation({ showNotification: true, isManual: true });
   });
+
 
   // Re-sync location with selected shop when customer changes
   document.getElementById('mobile-cust-select')?.addEventListener('change', (e) => {

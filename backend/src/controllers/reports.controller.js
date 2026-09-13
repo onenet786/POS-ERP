@@ -55,18 +55,17 @@ export async function getDashboardKPIs(req, res) {
        }
     }
 
-    // Auto-resolve any missing or outdated 'Store Counter' / erroneous human_location on bookers
+    // Auto-resolve any missing or outdated human_location on bookers
     for (const b of bookerLocations) {
       if (
         !b.human_location ||
         b.human_location.startsWith('Store Counter') ||
-        b.human_location.includes('Field Location Identified') ||
-        b.human_location.includes('Al-Rehman Garden') ||
+        b.human_location === 'Field Location Identified' ||
         b.human_location.includes('°')
       ) {
         if (b.latitude && b.longitude) {
           b.human_location = await reverseGeocodeCoordinates(b.latitude, b.longitude);
-          if (!b.address || b.address.startsWith('Store Counter') || b.address.includes('Al-Rehman Garden')) {
+          if (!b.address || b.address.startsWith('Store Counter')) {
             b.address = b.human_location;
           }
           if (isPostgresActive() && b.id) {
