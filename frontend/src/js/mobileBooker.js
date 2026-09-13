@@ -102,7 +102,7 @@ export async function getHumanReadableLocation(lat, lng) {
     console.warn('[Reverse Geocode Backend Notice]', err);
   }
 
-  // 2. Direct Nominatim fallback
+  // 2. Direct Nominatim fallback with accurate administrative hierarchy
   try {
     const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`;
     const nomRes = await fetch(nomUrl, { headers: { 'User-Agent': 'BinIshaqERP/2.0' } });
@@ -110,16 +110,33 @@ export async function getHumanReadableLocation(lat, lng) {
       const data = await nomRes.json();
       if (data && data.address) {
         const a = data.address;
-        const place = a.residential || a.suburb || a.neighbourhood || a.road || a.commercial || a.village || a.town || '';
-        const city = a.city || a.town || a.county || '';
+        const road = a.road || '';
+        let local = a.town || a.suburb || a.neighbourhood || a.village || a.quarter || '';
+        let society = a.residential || '';
+        if (society.includes('Al-Rehman Garden') && (local.includes('Batapur') || a.postcode === '53400' || (Number(lat) > 31.55 && Number(lng) > 74.45))) {
+          society = '';
+        }
+        const city = a.city || a.city_district?.replace(' District', '') || a.county?.replace(' District', '') || a.municipality?.replace(' Tehsil', '') || '';
         const state = a.state || '';
         const country = a.country || '';
-        const parts = [place, city, state, country].filter(p => p && p.trim().length > 0);
-        const unique = parts.filter((item, pos, arr) => !pos || item !== arr[pos - 1]);
-        if (unique.length > 0) return unique.join(', ');
+
+        const parts = [];
+        if (road && road !== local && !road.toLowerCase().includes('unnamed')) parts.push(road);
+        if (society) parts.push(society);
+        if (local && !parts.includes(local)) parts.push(local);
+        if (city && !parts.includes(city)) parts.push(city);
+        if (state && !parts.includes(state)) parts.push(state);
+        if (country && !parts.includes(country)) parts.push(country);
+
+        const result = parts.filter(Boolean).join(', ');
+        if (result.length > 0) return result;
       }
       if (data.display_name) {
-        return data.display_name.split(',').slice(0, 3).join(', ').trim();
+        let cleaned = data.display_name;
+        if (cleaned.includes('Al-Rehman Garden Phase-7') && cleaned.includes('Batapur')) {
+          cleaned = cleaned.replace('Al-Rehman Garden Phase-7, ', '');
+        }
+        return cleaned.split(',').slice(0, 4).join(', ').trim();
       }
     }
   } catch (_) {}
@@ -144,6 +161,7 @@ export async function getHumanReadableLocation(lat, lng) {
   // Friendly non-coordinate fallback
   return 'Customer Field Route (Verified)';
 }
+
 
 function acquireGps(isManualCheckin = false) {
   const text = document.getElementById('gps-status-text');

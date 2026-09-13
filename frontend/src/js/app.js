@@ -493,7 +493,14 @@ async function renderDashboardView(container) {
                   <span style="font-size:0.7rem; color:#34d399; font-weight:700; background:rgba(52,211,153,0.12); padding:2px 6px; border-radius:4px; border:1px solid rgba(52,211,153,0.25);">Live GPS</span>
                 </div>
                 <div style="font-size:0.95rem; font-weight:700; color:#ffffff; line-height:1.4;">
-                  ${(b.human_location && !b.human_location.startsWith('Store Counter')) ? b.human_location : ((b.address && !b.address.startsWith('Store Counter')) ? b.address : 'Field Location Identified')}
+                  ${(() => {
+                    let loc = b.human_location || b.address || '';
+                    if (loc.includes('Al-Rehman Garden') && (loc.includes('Batapur') || Number(b.latitude) > 31.55)) {
+                      loc = loc.replace('Al-Rehman Garden Phase-7, ', '').replace('Al-Rehman Garden, ', '');
+                    }
+                    if (loc.startsWith('Store Counter')) return 'Field Location Identified';
+                    return loc || 'Field Location Identified';
+                  })()}
                 </div>
                 <!-- Prominent GPS Coordinates -->
                 <div style="margin-top:6px; padding-top:6px; border-top:1px dashed rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-size:0.78rem;">

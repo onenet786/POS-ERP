@@ -26,20 +26,44 @@ export async function reverseGeocodeCoordinates(lat, lng) {
       const data = await res.json();
       if (data && data.address) {
         const a = data.address;
-        const place = a.residential || a.suburb || a.neighbourhood || a.road || a.commercial || a.village || a.town || '';
-        const city = a.city || a.town || a.county || a.municipality || '';
+
+        // Extract road if valid
+        const road = a.road || '';
+
+        // Extract true local area (neighborhood, suburb, town, village)
+        let local = a.town || a.suburb || a.neighbourhood || a.village || a.quarter || '';
+
+        // Check for erroneous OSM residential society tags (e.g., Al-Rehman Garden Phase-7 falsely tagged in Batapur)
+        let society = a.residential || '';
+        if (society.includes('Al-Rehman Garden') && (local.includes('Batapur') || a.postcode === '53400' || (numLat > 31.55 && numLng > 74.45))) {
+          society = ''; // Filter out false tag
+        }
+
+        // Clean City / District
+        const city = a.city || a.city_district?.replace(' District', '') || a.county?.replace(' District', '') || a.municipality?.replace(' Tehsil', '') || '';
         const state = a.state || '';
         const country = a.country || '';
-        const parts = [place, city, state, country].filter(p => p && p.trim().length > 0);
-        const unique = parts.filter((item, pos, arr) => !pos || item !== arr[pos - 1]);
-        if (unique.length > 0) {
-          const result = unique.join(', ');
+
+        const parts = [];
+        if (road && road !== local && !road.toLowerCase().includes('unnamed')) parts.push(road);
+        if (society) parts.push(society);
+        if (local && !parts.includes(local)) parts.push(local);
+        if (city && !parts.includes(city)) parts.push(city);
+        if (state && !parts.includes(state)) parts.push(state);
+        if (country && !parts.includes(country)) parts.push(country);
+
+        const result = parts.filter(Boolean).join(', ');
+        if (result.length > 0) {
           geocodeCache.set(cacheKey, result);
           return result;
         }
       }
       if (data.display_name) {
-        const result = data.display_name.split(',').slice(0, 3).join(', ').trim();
+        let cleaned = data.display_name;
+        if (cleaned.includes('Al-Rehman Garden Phase-7') && cleaned.includes('Batapur')) {
+          cleaned = cleaned.replace('Al-Rehman Garden Phase-7, ', '');
+        }
+        const result = cleaned.split(',').slice(0, 4).join(', ').trim();
         geocodeCache.set(cacheKey, result);
         return result;
       }

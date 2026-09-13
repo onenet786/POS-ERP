@@ -279,10 +279,12 @@ export async function updateBookerLocation(req, res) {
       finalHumanLocation === 'Field Location' ||
       finalHumanLocation === 'Field Location Identified' ||
       finalHumanLocation.startsWith('Store Counter') ||
+      finalHumanLocation.includes('Al-Rehman Garden') ||
       finalHumanLocation === 'Live Field Visit'
     ) {
       finalHumanLocation = await reverseGeocodeCoordinates(latitude, longitude);
     }
+
 
     const cleanAddress = finalHumanLocation || 'Live Field Route';
 
