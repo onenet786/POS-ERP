@@ -90,6 +90,27 @@ export function renderMobileBookerView(container) {
   attachMobileEvents();
 }
 
+export async function getHumanReadableLocation(lat, lng) {
+  try {
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      const parts = [];
+      if (data.locality && data.locality !== data.city) parts.push(data.locality);
+      if (data.city) parts.push(data.city);
+      if (data.principalSubdivision && data.principalSubdivision !== data.city) parts.push(data.principalSubdivision);
+      if (data.countryName) parts.push(data.countryName);
+      if (parts.length > 0) {
+        return parts.join(', ');
+      }
+    }
+  } catch (e) {
+    console.warn('[Reverse Geocode Notice]', e);
+  }
+  return `${Number(lat).toFixed(4)}°, ${Number(lng).toFixed(4)}°`;
+}
+
 function acquireGps(isManualCheckin = false) {
   const text = document.getElementById('gps-status-text');
   if (text) {
@@ -99,7 +120,7 @@ function acquireGps(isManualCheckin = false) {
 
   if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         const accuracy = Math.round(pos.coords.accuracy || 10);
@@ -109,14 +130,21 @@ function acquireGps(isManualCheckin = false) {
         AppState.mobileCart.geoLng = lng;
 
         if (text) {
-          text.innerHTML = `📍 Real GPS: ${lat.toFixed(5)}°, ${lng.toFixed(5)}° <span style="font-size:0.75rem; color:#34d399; font-weight:600;">(±${accuracy}m)</span>`;
+          text.innerHTML = `📍 Resolving location address...`;
+          text.style.color = '#38bdf8';
+        }
+
+        const humanLocation = await getHumanReadableLocation(lat, lng);
+
+        if (text) {
+          text.innerHTML = `📍 <strong>${humanLocation}</strong> <span style="font-size:0.75rem; color:#34d399; font-weight:600;">(±${accuracy}m)</span>`;
           text.style.color = '#34d399';
         }
 
-        sendLiveLocationToServer(lat, lng, accuracy, 'CHECKED_IN', speed);
+        sendLiveLocationToServer(lat, lng, accuracy, 'CHECKED_IN', speed, humanLocation);
 
         if (isManualCheckin) {
-          showToast(`✓ Shop Check-in verified with Real GPS (±${accuracy}m)`, 'success');
+          showToast(`✓ Check-in verified at ${humanLocation} (±${accuracy}m)`, 'success');
         }
       },
       (err) => {
@@ -147,7 +175,7 @@ function acquireGps(isManualCheckin = false) {
   }
 }
 
-async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECKED_IN', speed = 0.0) {
+async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECKED_IN', speed = 0.0, humanLocation = null) {
   try {
     const custSelect = document.getElementById('mobile-cust-select');
     const custId = custSelect ? custSelect.value : (AppState.customers[0]?.id || 1);
@@ -165,18 +193,19 @@ async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECK
     const payload = {
       latitude: lat,
       longitude: lng,
+      human_location: humanLocation,
       accuracy: Math.round(accuracy),
       battery_level: batteryLevel,
       speed: Number(speed) || 0.0,
       status: status,
       shop_id: custId,
       shop_name: shopName,
-      address: cust ? `${cust.address}, ${cust.city}` : 'Live Field Visit'
+      address: humanLocation ? `${shopName} • ${humanLocation}` : (cust ? `${cust.address}, ${cust.city}` : 'Live Field Visit')
     };
 
     const res = await Api.post('/sales/booker/location', payload);
     if (res?.success) {
-      console.log('[GPS] Real location successfully transmitted to server:', payload);
+      console.log('[GPS] Location recorded:', payload);
     }
   } catch (err) {
     console.warn('[GPS Sync] Notice:', err.message || err);

@@ -527,6 +527,7 @@ CREATE TABLE IF NOT EXISTS booker_locations (
     current_shop_id INT REFERENCES customers(id) ON DELETE SET NULL,
     current_shop_name VARCHAR(150),
     address TEXT,
+    human_location VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

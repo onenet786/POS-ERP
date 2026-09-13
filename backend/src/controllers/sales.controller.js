@@ -231,6 +231,7 @@ export async function updateBookerLocation(req, res) {
     const {
       latitude,
       longitude,
+      human_location,
       accuracy,
       battery_level,
       speed,
@@ -259,6 +260,7 @@ export async function updateBookerLocation(req, res) {
     if (existing) {
       existing.latitude = Number(latitude);
       existing.longitude = Number(longitude);
+      if (human_location) existing.human_location = human_location;
       if (accuracy !== undefined) existing.accuracy = Number(accuracy);
       if (battery_level !== undefined) existing.battery_level = Number(battery_level);
       if (speed !== undefined) existing.speed = Number(speed);
@@ -275,6 +277,7 @@ export async function updateBookerLocation(req, res) {
         phone,
         latitude: Number(latitude),
         longitude: Number(longitude),
+        human_location: human_location || address || 'Field Location Identified',
         accuracy: Number(accuracy || 10.0),
         battery_level: Number(battery_level || 90),
         speed: Number(speed || 0.0),
@@ -297,24 +300,24 @@ export async function updateBookerLocation(req, res) {
             `UPDATE booker_locations 
              SET latitude = $1, longitude = $2, accuracy = $3, battery_level = $4, 
                  speed = $5, status = $6, current_shop_id = $7, current_shop_name = $8, 
-                 address = $9, updated_at = CURRENT_TIMESTAMP
-             WHERE user_id = $10`,
+                 address = $9, human_location = $10, updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = $11`,
             [
               Number(latitude), Number(longitude), Number(accuracy || 10),
               Number(battery_level || 88), Number(speed || 0), status || 'CHECKED_IN',
               shop_id ? Number(shop_id) : null, shop_name || null,
-              address || null, userId
+              address || null, human_location || null, userId
             ]
           );
         } else {
           await query(
             `INSERT INTO booker_locations 
-             (user_id, booker_name, phone, latitude, longitude, accuracy, battery_level, speed, status, current_shop_id, current_shop_name, address, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+             (user_id, booker_name, phone, latitude, longitude, accuracy, battery_level, speed, status, current_shop_id, current_shop_name, address, human_location, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
             [
               userId, bookerName, phone, Number(latitude), Number(longitude),
               Number(accuracy || 10), Number(battery_level || 88), Number(speed || 0),
-              status || 'CHECKED_IN', shop_id ? Number(shop_id) : null, shop_name || null, address || null
+              status || 'CHECKED_IN', shop_id ? Number(shop_id) : null, shop_name || null, address || null, human_location || null
             ]
           );
         }

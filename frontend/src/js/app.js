@@ -472,33 +472,35 @@ async function renderDashboardView(container) {
                 </span>
               </div>
 
-              <!-- Shop Visited / Location Info -->
-              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:0.75rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                  <span style="font-size:0.72rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Target Shop / Check-in:</span>
-                  <span style="font-size:0.78rem; color:#34d399; font-weight:700;">🏪 ${b.current_shop_name || 'Retail Market'}</span>
+              <!-- Human Readable Live Location -->
+              <div style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.22); border-radius:8px; padding:0.75rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                  <span style="font-size:0.72rem; text-transform:uppercase; color:#38bdf8; font-weight:800; display:flex; align-items:center; gap:4px;">
+                    📍 Real-Time Location:
+                  </span>
+                  <span style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Live GPS</span>
                 </div>
-                <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.35;">
-                  ${b.address || 'Commercial Field Route'}
+                <div style="font-size:0.92rem; font-weight:700; color:#ffffff; line-height:1.35;">
+                  ${b.human_location || b.address || 'Field Location Identified'}
                 </div>
               </div>
 
-              <!-- GPS Coordinates & Telemetry -->
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; font-size:0.78rem;">
-                <div style="background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
-                  <span style="color:var(--text-muted); font-size:0.7rem; display:block; font-weight:600;">GPS Coordinates:</span>
-                  <span style="font-family:var(--font-mono); font-weight:700; color:#38bdf8;">
-                    ${Number(b.latitude).toFixed(4)}°, ${Number(b.longitude).toFixed(4)}°
+              <!-- Shop Visited / Telemetry -->
+              <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:0.5rem; font-size:0.78rem;">
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:6px 10px;">
+                  <span style="font-size:0.68rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; display:block;">Target Shop:</span>
+                  <span style="font-size:0.8rem; color:#34d399; font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    🏪 ${b.current_shop_name || 'Retail Market'}
                   </span>
                 </div>
                 <div style="background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between;">
                   <div>
-                    <span style="color:var(--text-muted); font-size:0.7rem; display:block; font-weight:600;">Battery:</span>
-                    <span style="font-weight:700; color:${b.battery_level > 20 ? '#34d399' : '#f87171'};">🔋 ${b.battery_level}%</span>
+                    <span style="color:var(--text-muted); font-size:0.68rem; display:block; font-weight:600;">Battery:</span>
+                    <span style="font-weight:700; color:${b.battery_level > 20 ? '#34d399' : '#f87171'}; font-size:0.82rem;">🔋 ${b.battery_level}%</span>
                   </div>
                   <div style="text-align:right;">
-                    <span style="color:var(--text-muted); font-size:0.7rem; display:block; font-weight:600;">Accuracy:</span>
-                    <span style="font-weight:600; color:#94a3b8;">±${b.accuracy || 10}m</span>
+                    <span style="color:var(--text-muted); font-size:0.68rem; display:block; font-weight:600;">Accuracy:</span>
+                    <span style="font-weight:600; color:#94a3b8; font-size:0.82rem;">±${b.accuracy || 10}m</span>
                   </div>
                 </div>
               </div>
@@ -507,7 +509,7 @@ async function renderDashboardView(container) {
               <div style="display:flex; gap:8px; margin-top:2px;">
                 <a href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none; color:#38bdf8; border-color:rgba(56,189,248,0.3); font-size:0.8rem; font-weight:600;">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                  <span>View on Google Maps</span>
+                  <span>View on Map (${b.human_location ? b.human_location.split(',')[0] : 'Map Pin'})</span>
                 </a>
               </div>
             </div>

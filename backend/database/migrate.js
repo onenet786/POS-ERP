@@ -96,6 +96,8 @@ async function runMigration() {
           legal_name = 'Bin Ishaq Softs Enterprise Suite (Head Office)',
           email = 'info@binishaqsoft.com'
       WHERE id = 1;
+
+      ALTER TABLE booker_locations ADD COLUMN IF NOT EXISTS human_location VARCHAR(255);
     `);
 
     console.log('-> Verification check:');

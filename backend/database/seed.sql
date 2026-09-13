@@ -172,9 +172,9 @@ INSERT INTO employees (id, company_id, employee_code, full_name, department, des
 ON CONFLICT (id) DO NOTHING;
 
 -- 15. BOOKER LIVE LOCATIONS
-INSERT INTO booker_locations (id, user_id, booker_name, phone, latitude, longitude, accuracy, battery_level, speed, status, current_shop_id, current_shop_name, address, updated_at) VALUES
-(1, 4, 'Hamza Khan (Field Booker)', '+92 300 9876543', 24.8607, 67.0011, 10.5, 88, 12.4, 'CHECKED_IN', 1, 'Metro Cash & Carry Hub', 'Plot 54, Commercial Avenue, Phase 2, Karachi', CURRENT_TIMESTAMP),
-(2, 3, 'Tariq Mehmood (North Route Booker)', '+92 321 4455667', 31.5204, 74.3587, 8.2, 74, 26.8, 'IN_TRANSIT', 2, 'Al-Madina Superstore', 'Near Liberty Roundabout, Gulberg III, Lahore', CURRENT_TIMESTAMP)
+INSERT INTO booker_locations (id, user_id, booker_name, phone, latitude, longitude, human_location, accuracy, battery_level, speed, status, current_shop_id, current_shop_name, address, updated_at) VALUES
+(1, 4, 'Hamza Khan (Field Booker)', '+92 300 9876543', 24.8607, 67.0011, 'Lyari Town, Karachi, Sindh', 10.5, 88, 12.4, 'CHECKED_IN', 1, 'Metro Cash & Carry Hub', 'Plot 54, Commercial Avenue, Phase 2, Karachi', CURRENT_TIMESTAMP),
+(2, 3, 'Tariq Mehmood (North Route Booker)', '+92 321 4455667', 31.5204, 74.3587, 'Gulberg III, Lahore, Punjab', 8.2, 74, 26.8, 'IN_TRANSIT', 2, 'Al-Madina Superstore', 'Near Liberty Roundabout, Gulberg III, Lahore', CURRENT_TIMESTAMP)
 ON CONFLICT (id) DO NOTHING;
 
 -- Restart sequences to avoid primary key conflicts on future inserts
