@@ -1,6 +1,7 @@
 import { AppState, formatCurrency, showToast } from './state.js';
 import { Api } from './api.js';
 import { printThermalReceipt } from './printService.js';
+import { openBarcodeScannerModal, playScannerBeep } from './cameraScanner.js';
 
 export function renderPosView(container) {
   container.innerHTML = `
@@ -10,8 +11,12 @@ export function renderPosView(container) {
         <div class="pos-top-bar">
           <div class="pos-search-input-box">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="pos-search-barcode" placeholder="Scan Barcode or Search Product [SKU, Name] (Press Enter to add)..." autofocus autocomplete="off" />
+            <input type="text" id="pos-search-barcode" placeholder="Scan Barcode or Search [SKU, Name] (Press Enter to add)..." autofocus autocomplete="off" />
           </div>
+          <button class="btn btn-primary btn-sm" id="btn-pos-camera-scan" title="Open Smartphone Camera Barcode Scanner" style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap; background:linear-gradient(135deg, #0284c7, #0369a1); font-weight:700;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            <span>📷 Camera Scan</span>
+          </button>
           <button class="btn btn-outline btn-sm" id="btn-shift-mgmt">
             <span id="shift-status-pill" class="tag tag-success">Shift Active</span>
           </button>
@@ -36,7 +41,10 @@ export function renderPosView(container) {
             <h3 style="font-size:1.05rem; font-weight:700;">Active Register Cart</h3>
             <span style="font-size:0.75rem; color:var(--text-muted);" id="active-cart-reg-name">Counter 01 - Express Lane</span>
           </div>
-          <button class="btn btn-outline btn-sm" id="btn-clear-cart" title="Clear Cart">Clear</button>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button class="btn btn-outline btn-sm" id="btn-cart-camera-scan" title="Scan with Phone Camera" style="color:#38bdf8; border-color:rgba(56,189,248,0.4); padding:4px 8px; font-size:12px;">📷 Scan</button>
+            <button class="btn btn-outline btn-sm" id="btn-clear-cart" title="Clear Cart">Clear</button>
+          </div>
         </div>
 
         <div class="cart-customer-select">
@@ -206,13 +214,65 @@ function attachPosEvents() {
     openPaymentModal();
   });
 
+  // Camera Barcode Scanner triggers (Mobile & Desktop)
+  const btnCameraScan = document.getElementById('btn-pos-camera-scan');
+  const btnCartCameraScan = document.getElementById('btn-cart-camera-scan');
+
+  const triggerCameraScanner = () => {
+    openBarcodeScannerModal({
+      title: 'Mobile POS Barcode Scanner',
+      continuous: true,
+      onScan: (barcode, matchedProduct) => {
+        if (matchedProduct) {
+          addToCart(matchedProduct);
+        }
+      }
+    });
+  };
+
+  btnCameraScan?.addEventListener('click', triggerCameraScanner);
+  btnCartCameraScan?.addEventListener('click', triggerCameraScanner);
+
   // Shift Management Modal
   btnShift?.addEventListener('click', () => {
     openShiftModal();
   });
 
-  // Global Keyboard Shortcuts (F2 Checkout, F4 Hold, Escape)
+  // Global Keyboard Shortcuts (F2 Checkout, F4 Hold, Escape) & Hardware Barcode Gun Listener
   window.addEventListener('keydown', handleKeyboardShortcuts);
+  window.addEventListener('keydown', handleHardwareBarcodeScan);
+}
+
+let hardwareScanBuffer = '';
+let lastKeypressTime = 0;
+
+function handleHardwareBarcodeScan(e) {
+  if (AppState.activeModule !== 'pos') return;
+  const activeEl = document.activeElement;
+  const isOtherInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && activeEl.id !== 'pos-search-barcode';
+  if (isOtherInput) return;
+
+  const now = Date.now();
+  // Barcode scanner guns type within ~30-50ms between characters
+  if (now - lastKeypressTime > 120) {
+    hardwareScanBuffer = '';
+  }
+  lastKeypressTime = now;
+
+  if (e.key === 'Enter') {
+    if (hardwareScanBuffer.length >= 3) {
+      const code = hardwareScanBuffer.trim();
+      hardwareScanBuffer = '';
+      const matched = AppState.products.find(p => p.barcode === code || p.sku.toLowerCase() === code.toLowerCase());
+      if (matched) {
+        addToCart(matched);
+        playScannerBeep();
+        showToast(`Hardware Barcode Scanned: ${matched.name}`, 'success');
+      }
+    }
+  } else if (e.key.length === 1) {
+    hardwareScanBuffer += e.key;
+  }
 }
 
 function handleKeyboardShortcuts(e) {

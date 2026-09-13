@@ -1,6 +1,7 @@
 import { AppState, formatCurrency, showToast } from './state.js';
 import { Api } from './api.js';
 import { openMobileAppModal } from './mobileAppModal.js';
+import { openBarcodeScannerModal } from './cameraScanner.js';
 
 let localOfflineOrders = JSON.parse(localStorage.getItem('apexerppos_offline_orders') || '[]');
 
@@ -198,71 +199,12 @@ function updateMobileCartSummary() {
   if (totalEl) totalEl.textContent = formatCurrency(total);
 }
 
-// Smartphone Camera Barcode Scanner Simulator & Live Video
+// Smartphone Camera Barcode Scanner using high-performance optical engine
 function openCameraScannerModal() {
-  const modalHtml = `
-    <div class="modal-overlay" id="camera-scanner-modal">
-      <div class="modal-content" style="max-width:440px; text-align:center;">
-        <div class="modal-header">
-          <h3 class="modal-title">Smartphone Camera Scanner</h3>
-          <button class="btn-icon btn-sm" id="btn-close-camera">✕</button>
-        </div>
-        <div class="modal-body">
-          <div style="position:relative; width:100%; height:240px; background:#000000; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
-            <video id="camera-stream-video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-            <!-- Target Reticle -->
-            <div style="position:absolute; width:180px; height:120px; border:2px solid #38bdf8; border-radius:8px; box-shadow:0 0 20px rgba(56,189,248,0.5);"></div>
-            <div style="position:absolute; bottom:10px; font-size:11px; color:#ffffff; background:rgba(0,0,0,0.6); padding:3px 10px; border-radius:12px;">Align Barcode inside reticle</div>
-          </div>
-
-          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;">
-            Point your smartphone camera at a product barcode or select a demo barcode below:
-          </p>
-
-          <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center;">
-            ${AppState.products.slice(0, 4).map(p => `
-              <button class="btn btn-outline btn-sm sim-scan-btn" data-barcode="${p.barcode}">
-                ${p.name.slice(0, 15)} (${p.barcode})
-              </button>
-            `).join('')}
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline" id="btn-dismiss-camera">Close Camera</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
-  const modal = document.getElementById('camera-scanner-modal');
-  const video = document.getElementById('camera-stream-video');
-
-  // Attempt real camera stream
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(stream => {
-        if (video) video.srcObject = stream;
-      })
-      .catch(err => {
-        console.log('[Camera] Simulated preview (camera permission or desktop):', err.message);
-      });
-  }
-
-  const cleanup = () => {
-    if (video && video.srcObject) {
-      video.srcObject.getTracks().forEach(track => track.stop());
-    }
-    modal.remove();
-  };
-
-  document.getElementById('btn-close-camera')?.addEventListener('click', cleanup);
-  document.getElementById('btn-dismiss-camera')?.addEventListener('click', cleanup);
-
-  modal.querySelectorAll('.sim-scan-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const bCode = btn.dataset.barcode;
-      const matched = AppState.products.find(p => p.barcode === bCode);
+  openBarcodeScannerModal({
+    title: 'Order Booker Camera Scanner',
+    continuous: true,
+    onScan: (barcode, matched) => {
       if (matched) {
         AppState.mobileCart.items.push({
           product_id: matched.id,
@@ -272,9 +214,7 @@ function openCameraScannerModal() {
           quantity: 1
         });
         updateMobileCartSummary();
-        showToast(`Camera Scanned: ${matched.name}`, 'success');
-        cleanup();
       }
-    });
+    }
   });
 }

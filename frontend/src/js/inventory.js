@@ -2,6 +2,7 @@ import { AppState, formatCurrency, showToast } from './state.js';
 import { Api } from './api.js';
 import { printBarcodeStickers } from './printService.js';
 import { generateBarcodeSvg } from './barcodeService.js';
+import { openBarcodeScannerModal } from './cameraScanner.js';
 
 let activeCategoryFilter = 'ALL';
 let currentActiveTab = 'stock-list';
@@ -560,6 +561,7 @@ function openProductModal(product = null) {
                 <label class="form-label">Barcode (EAN-13 / UPC / Custom):</label>
                 <div style="display:flex; gap:0.4rem;">
                   <input type="text" id="prod-form-barcode" class="form-control" value="${isEdit ? (product.barcode || '') : ''}" placeholder="Scan or Auto-generate" />
+                  <button type="button" class="btn btn-outline btn-xs" id="btn-camera-scan-prod-barcode" title="Scan Barcode with Camera" style="color:#38bdf8; border-color:rgba(56,189,248,0.4);">📷 Scan</button>
                   <button type="button" class="btn btn-outline btn-xs" id="btn-gen-barcode" title="Generate Random Barcode">Gen</button>
                 </div>
               </div>
@@ -649,6 +651,17 @@ function openProductModal(product = null) {
 
   document.getElementById('btn-close-prod-modal')?.addEventListener('click', () => modal.remove());
   document.getElementById('btn-cancel-prod')?.addEventListener('click', () => modal.remove());
+
+  document.getElementById('btn-camera-scan-prod-barcode')?.addEventListener('click', () => {
+    openBarcodeScannerModal({
+      title: 'Scan Product Barcode',
+      continuous: false,
+      onScan: (scannedCode) => {
+        const input = document.getElementById('prod-form-barcode');
+        if (input) input.value = scannedCode;
+      }
+    });
+  });
 
   document.getElementById('btn-gen-barcode')?.addEventListener('click', () => {
     document.getElementById('prod-form-barcode').value = '896' + Math.floor(100000000 + Math.random() * 900000000);
