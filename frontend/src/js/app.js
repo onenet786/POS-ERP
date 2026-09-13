@@ -121,7 +121,7 @@ function attachNavigation() {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       const module = item.dataset.module;
-      navigateTo(module);
+      if (module) navigateTo(module);
     });
   });
 
@@ -146,9 +146,31 @@ function attachNavigation() {
   document.getElementById('btn-open-mobile-app-modal')?.addEventListener('click', () => {
     openMobileAppModal();
   });
+
+  // Mobile Off-Canvas Drawer Toggle
+  const sidebar = document.getElementById('main-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+
+  const toggleDrawer = () => {
+    sidebar?.classList.toggle('drawer-open');
+    backdrop?.classList.toggle('active');
+  };
+
+  const closeDrawer = () => {
+    sidebar?.classList.remove('drawer-open');
+    backdrop?.classList.remove('active');
+  };
+
+  document.getElementById('btn-mobile-drawer-toggle')?.addEventListener('click', toggleDrawer);
+  document.getElementById('btn-mobile-more-nav')?.addEventListener('click', toggleDrawer);
+  backdrop?.addEventListener('click', closeDrawer);
 }
 
 function navigateTo(moduleName) {
+  // Automatically close mobile drawer when navigating
+  document.getElementById('main-sidebar')?.classList.remove('drawer-open');
+  document.getElementById('sidebar-backdrop')?.classList.remove('active');
+
   // Check RBAC permission
   if (moduleName !== 'dashboard' && !hasPermission(moduleName, 'view')) {
     showToast(`Access Denied: Your assigned role (${AppState.currentUser?.role_name}) does not have permission to view ${moduleName}`, 'error');

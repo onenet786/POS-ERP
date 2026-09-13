@@ -1218,58 +1218,377 @@ textarea:-webkit-autofill {
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* MOBILE APP STYLES & BOTTOM NAV */
+/* ============================================================================
+   MOBILE RESPONSIVENESS & TOUCH CLIENT SYSTEM (EXPERT GRADE)
+   ============================================================================ */
+
+/* Base helper elements */
+.mobile-drawer-toggle {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.sidebar-backdrop.active {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .mobile-nav-bar {
   display: none;
 }
 
-@media (max-width: 900px) {
+/* Tablet & Mobile Media Breakpoint (<= 992px) */
+@media (max-width: 992px) {
   #app-root {
     flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    overflow-x: hidden;
   }
-  .sidebar {
-    display: none;
-  }
-  .pos-container {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  .pos-cart-panel {
-    min-height: 380px;
-  }
-  .dashboard-grid-2col {
-    grid-template-columns: 1fr;
-  }
-  .mobile-nav-bar {
+
+  /* Off-Canvas Slide-out Drawer */
+  .mobile-drawer-toggle {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    cursor: pointer;
+    margin-right: 4px;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-drawer-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-bright);
+    color: #38bdf8;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -310px !important;
+    bottom: 0 !important;
+    width: 290px !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: #0c1322 !important;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.9) !important;
+    transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    display: flex !important;
+    border-right: 1px solid var(--border-bright) !important;
+  }
+
+  .sidebar.drawer-open {
+    left: 0 !important;
+  }
+
+  /* Compact Top Navbar */
+  .top-navbar {
+    height: 58px;
+    padding: 0 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    overflow: hidden;
+  }
+
+  .top-left-actions {
+    gap: 0.45rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .global-search {
+    display: none; /* Collapse search on mobile to prevent horizontal viewport break */
+  }
+
+  .top-right-actions {
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .system-status-badge {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.72rem;
+  }
+
+  .system-status-badge span:last-child {
+    display: none; /* Keep pulse dot only */
+  }
+
+  #btn-open-mobile-app-modal {
+    padding: 0.35rem 0.55rem;
+  }
+
+  #btn-open-mobile-app-modal span {
+    display: none; /* Icon only */
+  }
+
+  #btn-fullscreen-toggle {
+    display: none; /* Hide on small screen devices */
+  }
+
+  .company-badge-btn {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+    max-width: 140px;
+  }
+
+  .company-badge-btn span:first-of-type {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  /* High-Performance Mobile Bottom Navigation Bar */
+  .mobile-nav-bar {
+    display: flex !important;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
-    background: var(--bg-surface);
-    border-top: 1px solid var(--border-color);
+    height: 60px;
+    background: rgba(12, 19, 34, 0.96) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-bright);
     z-index: 1000;
     justify-content: space-around;
     align-items: center;
-    backdrop-filter: blur(16px);
+    padding: 0 4px;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
   }
+
   .mobile-nav-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    color: var(--text-muted);
-    font-size: 0.72rem;
+    justify-content: center;
+    gap: 3px;
+    color: #94a3b8;
+    font-size: 0.68rem;
+    font-weight: 600;
     cursor: pointer;
     text-decoration: none;
+    flex: 1;
+    padding: 6px 0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    user-select: none;
+    -webkit-user-select: none;
   }
+
+  .mobile-nav-item svg {
+    width: 19px;
+    height: 19px;
+  }
+
   .mobile-nav-item.active {
-    color: var(--primary);
+    color: #38bdf8 !important;
+    background: rgba(56, 189, 248, 0.12);
   }
+
+  .mobile-nav-item:active {
+    transform: scale(0.92);
+  }
+
+  /* Mobile Content Viewport */
   .content-viewport {
-    padding: 1rem;
-    padding-bottom: 80px;
+    padding: 0.85rem !important;
+    padding-bottom: 78px !important;
+    overflow-x: hidden;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .page-header > div:last-child {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .page-title {
+    font-size: 1.35rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.8rem;
+  }
+
+  /* Horizontal Scrollable Tabs & Sub-Navigation */
+  .sales-tab-btn, div[style*="border-bottom:1px solid var(--border-color)"] {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 6px !important;
+    padding-bottom: 6px !important;
+    scrollbar-width: none;
+  }
+
+  .sales-tab-btn::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Responsive Data Tables */
+  .data-table-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border-color);
+  }
+
+  .data-table {
+    min-width: 650px !important;
+  }
+
+  .data-table th, .data-table td {
+    padding: 0.7rem 0.8rem !important;
+    font-size: 0.82rem !important;
+    white-space: nowrap;
+  }
+
+  /* Dashboard Cards & Grids */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  .dashboard-grid-2col {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* POS Touch Experience on Mobile */
+  .pos-container {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    gap: 1rem !important;
+  }
+
+  .pos-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.75rem;
+  }
+
+  .pos-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    gap: 0.65rem !important;
+    padding: 0.75rem !important;
+    max-height: 420px !important;
+  }
+
+  .product-touch-card {
+    padding: 0.75rem !important;
+  }
+
+  .card-product-name {
+    font-size: 0.82rem !important;
+  }
+
+  .card-price {
+    font-size: 0.95rem !important;
+  }
+
+  .pos-cart-panel {
+    min-height: auto !important;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Mobile Bottom Sheet Modals */
+  .modal-overlay {
+    padding: 0.35rem !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-content {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 92vh !important;
+    margin: 0 !important;
+    padding: 1.25rem 0.95rem !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  /* Collapse desktop grids in modals */
+  .modal-body div[style*="grid-template-columns"],
+  .modal-content div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .modal-body table {
+    min-width: 520px !important;
+  }
+
+  .modal-body > div[style*="overflow:hidden"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Auth Card on Mobile */
+  .auth-card {
+    width: 95% !important;
+    max-width: 420px !important;
+    padding: 1.75rem 1.25rem !important;
+    margin: 1rem auto !important;
+  }
+}
+
+/* Smartphone Portrait Breakpoint (<= 520px) */
+@media (max-width: 520px) {
+  .kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .kpi-value {
+    font-size: 1.55rem !important;
+  }
+
+  .page-title {
+    font-size: 1.2rem !important;
   }
 }
 
