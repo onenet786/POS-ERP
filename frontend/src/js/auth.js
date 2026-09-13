@@ -161,7 +161,7 @@ export async function renderAuthPortal(onSuccess) {
             <span>Username or Corporate Email</span>
           </label>
           <div style="position:relative;">
-            <input type="text" id="portal-username" class="form-control" placeholder="admin or user@company.com" value="admin" required autocomplete="username" style="padding-left:2.5rem; border-radius:10px;" />
+            <input type="text" id="portal-username" class="form-control" placeholder="admin or user@company.com" required autocomplete="username" style="padding-left:2.5rem; border-radius:10px;" />
             <div style="position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             </div>
@@ -176,7 +176,7 @@ export async function renderAuthPortal(onSuccess) {
             </button>
           </div>
           <div style="position:relative;">
-            <input type="password" id="portal-password" class="form-control" placeholder="••••••••" value="Admin@123456" required autocomplete="current-password" style="padding-left:2.5rem; padding-right:2.8rem; border-radius:10px;" />
+            <input type="password" id="portal-password" class="form-control" placeholder="••••••••" required autocomplete="current-password" style="padding-left:2.5rem; padding-right:2.8rem; border-radius:10px;" />
             <div style="position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             </div>

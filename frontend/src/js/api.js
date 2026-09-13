@@ -50,6 +50,27 @@ export class Api {
       body: JSON.stringify(body)
     });
   }
+
+  static put(endpoint, body) {
+    return this.request(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    });
+  }
+
+  static patch(endpoint, body) {
+    return this.request(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(body)
+    });
+  }
+
+  static delete(endpoint, body) {
+    return this.request(endpoint, {
+      method: 'DELETE',
+      body: body ? JSON.stringify(body) : undefined
+    });
+  }
 }
 
 // Real-time WebSocket connection manager
