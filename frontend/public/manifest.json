@@ -1,24 +1,71 @@
 {
   "name": "OneNet Solutions Enterprise Suite",
   "short_name": "OneNet ERP",
-  "description": "Enterprise Cloud Accounting, Multi-Company ERP, POS, HR Payroll & Field Sales Order Booker",
-  "start_url": "/#mobile_booker",
+  "description": "Enterprise Cloud Accounting, Multi-Company ERP, Touch POS, HR Payroll & Mobile Field Order Booker",
+  "id": "/?source=playstore",
+  "start_url": "/?source=pwa#dashboard",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#090d16",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "background_color": "#080c14",
   "theme_color": "#0f172a",
   "orientation": "any",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Point of Sale (POS)",
+      "short_name": "POS",
+      "description": "Quick Retail POS Barcode Scanner Checkout",
+      "url": "/#pos",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Field Order Booker",
+      "short_name": "Booker",
+      "description": "GPS Order Booking for Salesperson",
+      "url": "/#mobile_booker",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sales & Invoicing",
+      "short_name": "Sales",
+      "description": "B2B Wholesale Invoices & Receipts",
+      "url": "/#sales",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

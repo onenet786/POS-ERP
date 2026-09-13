@@ -6,7 +6,12 @@
   <meta name="theme-color" content="#0f172a" />
   <title>OneNet Solutions Enterprise Suite - Cloud Accounting, Multi-Company ERP, POS & HR Payroll</title>
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OneNet ERP" />
   <link rel="stylesheet" href="/src/styles/main.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -86,7 +91,29 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Database Backup</span>
         </a>
+
+        <!-- MOBILE APP DOWNLOAD CARD IN LEFT MENU -->
+        <div class="sidebar-app-download-box" id="sidebar-app-download-box">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="sidebar-app-icon">📱</div>
+            <div style="flex:1; overflow:hidden;">
+              <div style="font-size:0.84rem; font-weight:700; color:#f8fafc; white-space:nowrap; text-overflow:ellipsis;">OneNet Mobile App</div>
+              <div style="font-size:0.7rem; color:#38bdf8;">Pure Android APK & PWA</div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-sidebar-download-app" style="width:100%; margin-top:8px; font-size:0.78rem; font-weight:700; padding:0.45rem 0.65rem; background:linear-gradient(135deg, #0284c7, #0369a1);">
+            📲 Install Android App
+          </button>
+        </div>
       </nav>
+
+      <!-- SIDEBAR FOOTER WITH THEME TOGGLE & DB STATUS -->
+      <div class="sidebar-footer-controls">
+        <button class="btn btn-outline btn-sm" id="btn-sidebar-theme-toggle" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.78rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <span>Switch Light / Dark Theme</span>
+        </button>
+      </div>
 
       <div class="user-profile-bar">
         <div class="user-avatar">SA</div>
@@ -113,29 +140,29 @@
           <!-- Active Company Switcher Container -->
           <div id="company-switcher-container"></div>
 
-          <div class="global-search">
+          <div class="global-search desktop-only-action">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" placeholder="Global search items, invoices, customers (Ctrl + K)..." id="global-search-input" />
           </div>
         </div>
 
         <div class="top-right-actions">
-          <div class="system-status-badge" id="ws-status-indicator" title="Live PostgreSQL Sync">
+          <div class="system-status-badge desktop-only-action" id="ws-status-indicator" title="Live PostgreSQL Sync">
             <span class="status-dot-pulse"></span>
             <span>Live PostgreSQL Sync</span>
           </div>
 
-          <!-- Mobile App & PWA Download Button -->
-          <button class="btn btn-outline btn-sm" id="btn-open-mobile-app-modal" title="Mobile App & PWA Installation Center">
+          <!-- Mobile App & PWA Download Button (Desktop only on top bar; mobile has it in left menu) -->
+          <button class="btn btn-outline btn-sm desktop-only-action" id="btn-open-mobile-app-modal" title="Mobile App & PWA Installation Center">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
             <span>📱 Mobile App</span>
           </button>
 
-          <button class="btn-icon" id="btn-theme-toggle" title="Toggle Light/Dark Theme">
+          <button class="btn-icon desktop-only-action" id="btn-theme-toggle" title="Toggle Light/Dark Theme">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
           </button>
 
-          <button class="btn-icon" id="btn-fullscreen-toggle" title="Toggle Fullscreen">
+          <button class="btn-icon desktop-only-action" id="btn-fullscreen-toggle" title="Toggle Fullscreen">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
           </button>
 

@@ -74,6 +74,8 @@ export function renderUserNavWidget(onSignOut) {
 
   toggleBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
+    const compMenu = document.getElementById('company-dropdown-menu');
+    if (compMenu) compMenu.style.display = 'none';
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   });
 

@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.binishaqsoft.bierppos",
+      "sha256_cert_fingerprints": [
+        "14:6D:E9:7D:0F:52:AB:E0:16:32:09:A9:E1:5A:6D:77:E5:69:B8:31:84:82:76:F1:C9:26:A7:28:C2:59:7A:B4",
+        "87:72:08:BE:24:BD:EC:3F:EB:6D:FA:B8:5B:C9:58:3B:5B:63:F6:FE:57:3E:C2:95:5F:B6:53:DA:0C:44:07:93"
+      ]
+    }
+  }
+]

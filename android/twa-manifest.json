@@ -1,0 +1,50 @@
+{
+  "packageId": "com.binishaqsoft.bierppos",
+  "host": "bierppos.binishaqsoft.com",
+  "name": "OneNet Solutions Enterprise Suite",
+  "launcherName": "OneNet ERP",
+  "display": "standalone",
+  "themeColor": "#0f172a",
+  "themeColorDark": "#080c14",
+  "navigationColor": "#080c14",
+  "navigationColorDark": "#080c14",
+  "navigationDividerColor": "#1e293b",
+  "backgroundColor": "#080c14",
+  "enableNotifications": true,
+  "startUrl": "/?source=playstore#dashboard",
+  "iconUrl": "https://bierppos.binishaqsoft.com/icon-512.png",
+  "maskableIconUrl": "https://bierppos.binishaqsoft.com/icon-512.png",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "POS Register",
+      "shortName": "POS",
+      "url": "https://bierppos.binishaqsoft.com/#pos",
+      "chosenIconUrl": "https://bierppos.binishaqsoft.com/icon-192.png"
+    },
+    {
+      "name": "Order Booker",
+      "shortName": "Booker",
+      "url": "https://bierppos.binishaqsoft.com/#mobile_booker",
+      "chosenIconUrl": "https://bierppos.binishaqsoft.com/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://bierppos.binishaqsoft.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "fullScopeUrl": "https://bierppos.binishaqsoft.com/"
+}

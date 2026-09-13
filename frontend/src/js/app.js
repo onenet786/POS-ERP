@@ -130,8 +130,16 @@ function attachNavigation() {
     });
   });
 
-  // Theme Toggle
+  // Theme Toggle (Top Bar Desktop)
   document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
+    const current = document.body.getAttribute('data-theme');
+    const next = current === 'light' ? 'dark' : 'light';
+    document.body.setAttribute('data-theme', next);
+    showToast(`Switched to ${next} theme`, 'info');
+  });
+
+  // Theme Toggle (Left Sidebar Menu for Mobile)
+  document.getElementById('btn-sidebar-theme-toggle')?.addEventListener('click', () => {
     const current = document.body.getAttribute('data-theme');
     const next = current === 'light' ? 'dark' : 'light';
     document.body.setAttribute('data-theme', next);
@@ -147,9 +155,39 @@ function attachNavigation() {
     }
   });
 
-  // Mobile App Modal Trigger
+  // PWA Native Install Prompt Detection
+  let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    window.deferredInstallPrompt = e;
+    console.log('[PWA] beforeinstallprompt captured and ready');
+  });
+
+  const handleInstallApp = () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          showToast('Thank you! OneNet ERP is now installing.', 'success');
+        }
+        deferredInstallPrompt = null;
+      });
+    } else {
+      openMobileAppModal();
+    }
+  };
+
+  // Mobile App Modal Trigger (Desktop Top Bar)
   document.getElementById('btn-open-mobile-app-modal')?.addEventListener('click', () => {
-    openMobileAppModal();
+    handleInstallApp();
+  });
+
+  // Mobile App Modal Trigger (Left Drawer for Mobile)
+  document.getElementById('btn-sidebar-download-app')?.addEventListener('click', () => {
+    sidebar?.classList.remove('drawer-open');
+    backdrop?.classList.remove('active');
+    handleInstallApp();
   });
 
   // Mobile Off-Canvas Drawer Toggle

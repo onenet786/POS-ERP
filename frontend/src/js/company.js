@@ -64,6 +64,8 @@ export function renderCompanySwitcher() {
 
   toggleBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
+    const userMenu = document.getElementById('user-menu-dropdown');
+    if (userMenu) userMenu.style.display = 'none';
     menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
   });
 

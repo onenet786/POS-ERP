@@ -79,26 +79,37 @@ export async function openMobileAppModal() {
           </div>
         </div>
 
-        <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.2); border-radius:10px; padding:0.85rem; margin-bottom:1.5rem;">
-          <div style="font-size:0.8rem; font-weight:700; color:#38bdf8; margin-bottom:4px;">✨ Built-in Mobile Capabilities:</div>
+        <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.25); border-radius:12px; padding:1rem; margin-bottom:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <div style="font-size:0.85rem; font-weight:700; color:#38bdf8;">🛍️ Google Play Store & Pure Android APK</div>
+            <span class="badge" style="background:#10b98126; color:#34d399; font-weight:700; border:1px solid rgba(16,185,129,0.3);">TWA Ready</span>
+          </div>
+          <p style="font-size:0.78rem; color:#cbd5e1; line-height:1.45; margin:0 0 8px 0;">
+            This enterprise suite is 100% packaged as a Trusted Web Activity (TWA) with Digital Asset Links, allowing customers to download directly as a standalone Android App from the Google Play Store or install the PWA instantly.
+          </p>
           <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:0.75rem; color:var(--text-muted);">
-            <span>✓ Offline IndexedDB Storage</span>
+            <span>✓ Package: <code>com.binishaqsoft.bierppos</code></span>
             <span>•</span>
-            <span>✓ Camera Barcode / QR Scanner</span>
+            <span>✓ Offline IndexedDB</span>
             <span>•</span>
-            <span>✓ GPS Location Verification</span>
+            <span>✓ Hardware Camera Scanner</span>
             <span>•</span>
-            <span>✓ Thermal Receipt Slip Share</span>
+            <span>✓ Real-time Fleet GPS</span>
           </div>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
-          <button class="btn btn-outline" id="btn-copy-mobile-url" style="font-size:0.85rem;">
-            📋 Copy Mobile URL
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+          <button class="btn btn-outline btn-sm" id="btn-copy-mobile-url" style="font-size:0.82rem;">
+            📋 Copy Mobile App Link
           </button>
-          <button class="btn btn-primary" id="btn-launch-mobile-booker-now" style="font-size:0.85rem; font-weight:700;">
-            🚀 Open Booker in Browser
-          </button>
+          <div style="display:flex; gap:0.6rem;">
+            <button class="btn btn-outline btn-sm" id="btn-direct-pwa-install" style="font-size:0.82rem; color:#38bdf8; border-color:rgba(56,189,248,0.4);">
+              📲 Install on Device
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-launch-mobile-booker-now" style="font-size:0.82rem; font-weight:700;">
+              🚀 Open App View
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -116,6 +127,20 @@ export async function openMobileAppModal() {
     navigator.clipboard.writeText(mobileUrl).then(() => {
       showToast('Mobile URL copied to clipboard!', 'success');
     });
+  });
+
+  document.getElementById('btn-direct-pwa-install')?.addEventListener('click', () => {
+    if (window.deferredInstallPrompt) {
+      window.deferredInstallPrompt.prompt();
+      window.deferredInstallPrompt.userChoice.then((res) => {
+        if (res.outcome === 'accepted') {
+          showToast('OneNet ERP is being installed on your home screen!', 'success');
+          modal.remove();
+        }
+      });
+    } else {
+      showToast('To install: Tap browser menu (⋮) and choose "Install App" or "Add to Home Screen".', 'info');
+    }
   });
 
   document.getElementById('btn-launch-mobile-booker-now')?.addEventListener('click', () => {
