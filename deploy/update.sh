@@ -13,7 +13,8 @@ echo "=================================================================="
 # Move to root directory
 cd "$(dirname "$0")/.."
 
-# 1. Pull latest code from GitHub
+# 1. Clean local package-lock changes & pull latest code from GitHub
+git checkout -- frontend/package-lock.json 2>/dev/null || true
 git pull origin main
 
 # 2. Update Backend dependencies and restart PM2
