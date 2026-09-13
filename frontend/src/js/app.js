@@ -23,6 +23,8 @@ let _isWorkspaceStarted = false;
 async function bootstrap() {
   console.log('[Bin Ishaq Softs] Bootstrapping Enterprise Suite...');
 
+  window.applyNavigationPermissions = applyNavigationPermissions;
+
   // Global listener in case login completes without a direct callback
   window.addEventListener('auth:login-success', async () => {
     await startWorkspace();
@@ -61,19 +63,23 @@ async function startWorkspace() {
     });
   });
 
-  // Initialize Data
+  // Initialize Data & Role Permissions Matrix
   try {
-    const [prodsRes, catsRes, whsRes, custsRes] = await Promise.all([
+    const [prodsRes, catsRes, whsRes, custsRes, matrixRes] = await Promise.all([
       Api.get('/inventory/products'),
       Api.get('/inventory/categories'),
       Api.get('/inventory/warehouses'),
-      Api.get('/sales/customers')
+      Api.get('/sales/customers'),
+      Api.get('/users/permissions/matrix')
     ]);
 
     if (prodsRes.success) AppState.products = prodsRes.products;
     if (catsRes.success) AppState.categories = catsRes.categories;
     if (whsRes.success) AppState.warehouses = whsRes.warehouses;
     if (custsRes.success) AppState.customers = custsRes.customers;
+    if (matrixRes?.success && matrixRes.matrix) {
+      AppState.permissionsMatrix = matrixRes.matrix;
+    }
   } catch (err) {
     console.error('Initial data load error:', err);
   }
@@ -89,7 +95,7 @@ async function startWorkspace() {
           renderDashboardView(document.getElementById('content-viewport'));
         }
       } else if (data.type === 'BOOKER_LOCATION_UPDATE') {
-        showToast(`📍 Live GPS: ${data.payload.booker_name} updated location at ${data.payload.current_shop_name || 'Field'}`, 'info');
+        // Real-time telemetry: update dashboard fleet cards silently without intrusive toast spam
         if (AppState.activeModule === 'dashboard') {
           renderDashboardView(document.getElementById('content-viewport'));
         }
@@ -126,6 +132,9 @@ async function startWorkspace() {
 
     _isWorkspaceStarted = true;
   }
+
+  // Apply role-based visibility to sidebar and mobile navigation items
+  applyNavigationPermissions();
 
   // Route determination based on role
   const userRole = AppState.currentUser?.role_name?.toLowerCase() || '';
@@ -241,13 +250,62 @@ function attachNavigation() {
   backdrop?.addEventListener('click', closeDrawer);
 }
 
+export function applyNavigationPermissions() {
+  const user = AppState.currentUser;
+  if (!user) return;
+
+  const roleLower = String(user.role_name || '').toLowerCase();
+  const isAdmin =
+    roleLower === 'super admin' ||
+    roleLower === 'admin' ||
+    roleLower === 'administrator' ||
+    user.role_id === 1;
+
+  // Filter desktop sidebar navigation items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const mod = item.dataset.module;
+    if (!mod) return;
+
+    if (isAdmin || mod === 'dashboard') {
+      item.style.display = 'flex';
+    } else {
+      const allowed = hasPermission(mod, 'view');
+      item.style.display = allowed ? 'flex' : 'none';
+    }
+  });
+
+  // Filter mobile bottom navigation items
+  document.querySelectorAll('.mobile-nav-item').forEach(item => {
+    const mod = item.dataset.module;
+    if (!mod) return;
+
+    if (isAdmin || mod === 'dashboard') {
+      item.style.display = 'flex';
+    } else {
+      const allowed = hasPermission(mod, 'view');
+      item.style.display = allowed ? 'flex' : 'none';
+    }
+  });
+
+  // User menu RBAC link
+  const rbacLink = document.getElementById('menu-goto-rbac');
+  if (rbacLink) {
+    rbacLink.style.display = (isAdmin || hasPermission('users', 'view')) ? 'flex' : 'none';
+  }
+}
+
 function navigateTo(moduleName) {
   // Automatically close mobile drawer when navigating
   document.getElementById('main-sidebar')?.classList.remove('drawer-open');
   document.getElementById('sidebar-backdrop')?.classList.remove('active');
 
-  const userRole = AppState.currentUser?.role_name?.toLowerCase() || '';
+  const userRole = String(AppState.currentUser?.role_name || '').toLowerCase();
   const isBooker = AppState.currentUser?.role_id === 4 || userRole.includes('booker');
+  const isAdmin =
+    userRole === 'super admin' ||
+    userRole === 'admin' ||
+    userRole === 'administrator' ||
+    AppState.currentUser?.role_id === 1;
 
   // Bookers should directly access mobile order booking rather than executive financials
   if (isBooker && (moduleName === 'dashboard' || !moduleName)) {
@@ -255,10 +313,11 @@ function navigateTo(moduleName) {
     window.location.hash = '#mobile_booker';
   }
 
-  // Check RBAC permission
-  if (moduleName !== 'dashboard' && !hasPermission(moduleName, 'view')) {
-    showToast(`Access Denied: Your assigned role (${AppState.currentUser?.role_name}) does not have permission to view ${moduleName}`, 'error');
-    moduleName = isBooker ? 'mobile_booker' : 'dashboard';
+  // Check RBAC permission for non-admin users
+  if (!isAdmin && moduleName !== 'dashboard' && !hasPermission(moduleName, 'view')) {
+    showToast(`Access Restricted: Your assigned role (${AppState.currentUser?.role_name || 'Staff'}) does not have permission to view ${moduleName}`, 'error');
+    moduleName = isBooker ? 'mobile_booker' : (hasPermission('pos', 'view') ? 'pos' : 'dashboard');
+    window.location.hash = `#${moduleName}`;
   }
 
   AppState.activeModule = moduleName;

@@ -7,7 +7,8 @@ INSERT INTO roles (id, name, description) VALUES
 (1, 'Super Admin', 'Full system access and configurations'),
 (2, 'Store Manager', 'Store management, inventory, purchases, and reporting'),
 (3, 'Cashier', 'POS billing, returns, and daily shift management'),
-(4, 'Field Sales Booker', 'Mobile order booking, customer visits, geo-tagging')
+(4, 'Field Sales Booker', 'Mobile order booking, customer visits, geo-tagging'),
+(5, 'Senior Accountant', 'Accounting, ledger audit, journal entries and financial reports')
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. USERS (Default password for admin is: Admin@123456 -> bcrypt hash)

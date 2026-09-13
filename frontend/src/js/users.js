@@ -235,6 +235,7 @@ async function savePermissionsMatrix() {
     const res = await Api.put('/users/permissions/matrix', { matrix: permissionsMatrix });
     if (res.success) {
       AppState.permissionsMatrix = permissionsMatrix;
+      window.applyNavigationPermissions?.();
       showToast('Module Permissions Matrix saved successfully!', 'success');
     }
   } catch (err) {

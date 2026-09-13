@@ -98,6 +98,10 @@ async function runMigration() {
       WHERE id = 1;
 
       ALTER TABLE booker_locations ADD COLUMN IF NOT EXISTS human_location VARCHAR(255);
+
+      INSERT INTO roles (id, name, description) 
+      VALUES (5, 'Senior Accountant', 'Accounting, ledger audit, journal entries and financial reports')
+      ON CONFLICT (id) DO NOTHING;
     `);
 
     console.log('-> Verification check:');

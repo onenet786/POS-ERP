@@ -335,6 +335,18 @@ const mockStore = {
       backup: [],
       reports: [],
       users: []
+    },
+    'Senior Accountant': {
+      pos: ['view'],
+      inventory: ['view'],
+      sales: ['view'],
+      accounting: ['view', 'create', 'edit', 'approve', 'export'],
+      manufacturing: ['view'],
+      mobile_booker: [],
+      payroll: ['view', 'create', 'process'],
+      backup: ['view'],
+      reports: ['view', 'export'],
+      users: []
     }
   },
   employees: [
