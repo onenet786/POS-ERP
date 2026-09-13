@@ -19,7 +19,7 @@ let salesChartInstance = null;
 let _isWorkspaceStarted = false;
 
 async function bootstrap() {
-  console.log('[OneNet Solutions] Bootstrapping Enterprise Suite...');
+  console.log('[Bin Ishaq Softs] Bootstrapping Enterprise Suite...');
 
   // Authentication Gate Check: If no user session, show Login Portal first
   if (!AppState.currentUser) {

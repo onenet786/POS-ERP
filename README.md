@@ -107,7 +107,7 @@ PGUSER=postgres
 PGPASSWORD=your_actual_postgres_password
 PGDATABASE=bierppos
 
-COMPANY_NAME="OneNet Solutions"
+COMPANY_NAME="Bin Ishaq Softs"
 COMPANY_ADDRESS="Muslim Town, Lahore, Pakistan"
 COMPANY_TAX_ID="NTN-7492019-2"
 COMPANY_PHONE="+92 42 30000001"

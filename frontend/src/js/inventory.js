@@ -1119,7 +1119,7 @@ function openBarcodeLabelsModal() {
   const p = AppState.products[0] || { name: 'Sample Item', barcode: '896400010101', selling_price: 150, sku: 'ITM-001' };
 
   function renderLabelCardsHtml(prod, count = 6) {
-    const company = AppState.activeCompany || { name: 'OneNet Solutions' };
+    const company = AppState.activeCompany || { name: 'Bin Ishaq Softs' };
     const barcodeSvg = generateBarcodeSvg(prod.barcode || prod.sku || '896400010101', {
       width: 1.4,
       height: 34,
@@ -1129,7 +1129,7 @@ function openBarcodeLabelsModal() {
 
     return Array.from({ length: count }).map(() => `
       <div style="border:1px dashed #64748b; border-radius:6px; padding:8px 6px; text-align:center; background:#ffffff; color:#0f172a; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        <div style="font-weight:800; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#0f172a;">${company.name || 'ONENET SOLUTIONS'}</div>
+        <div style="font-weight:800; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#0f172a;">${company.name || 'BIN ISHAQ SOFTS'}</div>
         <div style="font-size:9.5px; font-weight:600; margin:1px 0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:#334155;">${prod.name.slice(0, 24)}</div>
         <div style="margin:2px 0; display:flex; justify-content:center; width:100%;">
           ${barcodeSvg}

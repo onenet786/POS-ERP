@@ -430,7 +430,7 @@ function openProcessPayrollModal() {
           <div style="background:rgba(14,165,233,0.1); border:1px solid var(--border-bright); padding:1rem; border-radius:8px; text-align:center; margin-bottom:1rem;">
             <div style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted);">Payroll Period</div>
             <div style="font-size:1.6rem; font-weight:800; color:#38bdf8;">${currentMonth}</div>
-            <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px;">Company: ${AppState.activeCompany?.name || 'OneNet Solutions'}</div>
+            <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:2px;">Company: ${AppState.activeCompany?.name || 'Bin Ishaq Softs'}</div>
           </div>
 
           <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:6px; padding:0.75rem; margin-bottom:1rem; font-size:13px;">

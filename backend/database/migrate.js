@@ -89,6 +89,15 @@ async function runMigration() {
     await client.query(seedSql);
     console.log('-> Seed data inserted successfully.');
 
+    // Ensure company rebranding is applied to existing databases
+    await client.query(`
+      UPDATE companies 
+      SET name = 'Bin Ishaq Softs', 
+          legal_name = 'Bin Ishaq Softs Enterprise Suite (Head Office)',
+          email = 'info@binishaqsoft.com'
+      WHERE id = 1;
+    `);
+
     console.log('-> Verification check:');
     const productsCount = await client.query('SELECT COUNT(*) FROM products');
     const accountsCount = await client.query('SELECT COUNT(*) FROM chart_of_accounts');

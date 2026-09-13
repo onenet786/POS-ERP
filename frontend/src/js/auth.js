@@ -129,7 +129,7 @@ export async function renderAuthPortal(onSuccess) {
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><polygon points="12 2 2 22 22 22 12 2"></polygon></svg>
         </div>
         <h1 style="font-family:var(--font-heading); font-size:1.65rem; font-weight:800; letter-spacing:-0.02em; background:linear-gradient(90deg,#38bdf8,#818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin:0;">
-          OneNet Solutions
+          Bin Ishaq Softs
         </h1>
         <div style="display:inline-block; margin-top:6px; padding:2px 10px; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); border-radius:20px; font-size:0.75rem; font-weight:700; color:#38bdf8; letter-spacing:0.5px;">
           ENTERPRISE SUITE
@@ -429,7 +429,7 @@ function openAccessRecoveryModal() {
               Corporate Access Assistance
             </h2>
             <p style="font-size:0.8rem; color:var(--text-muted); margin:4px 0 0 0;">
-              OneNet Solutions Enterprise Security Gateway
+              Bin Ishaq Softs Enterprise Security Gateway
             </p>
           </div>
           <button class="btn-icon" id="btn-close-recovery-modal" style="border:none; cursor:pointer;">✕</button>
@@ -437,7 +437,7 @@ function openAccessRecoveryModal() {
 
         <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:10px; padding:1.25rem; margin-bottom:1.25rem; font-size:0.85rem; line-height:1.6; color:var(--text-main);">
           <p style="margin-top:0;">
-            For security reasons, password resets in OneNet Enterprise Suite are managed through your organization's designated System Administrator or via server-level tools.
+            For security reasons, password resets in Bin Ishaq Enterprise Suite are managed through your organization's designated System Administrator or via server-level tools.
           </p>
           <div style="font-weight:700; color:#38bdf8; margin-top:0.75rem;">Default System Credentials:</div>
           <ul style="margin:0; padding-left:1.2rem; font-size:0.82rem; color:var(--text-muted);">

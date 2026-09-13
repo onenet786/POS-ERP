@@ -1,8 +1,8 @@
 {
   "packageId": "com.binishaqsoft.bierppos",
   "host": "bierppos.binishaqsoft.com",
-  "name": "OneNet Solutions Enterprise Suite",
-  "launcherName": "OneNet ERP",
+  "name": "Bin Ishaq Softs Enterprise Suite",
+  "launcherName": "Bin Ishaq ERP",
   "display": "standalone",
   "themeColor": "#0f172a",
   "themeColorDark": "#080c14",

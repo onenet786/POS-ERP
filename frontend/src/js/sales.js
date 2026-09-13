@@ -224,8 +224,8 @@ function openInvoiceModal(inv) {
           <!-- Professional Tax Invoice Layout -->
           <div style="display:flex; justify-content:space-between; border-bottom:2px solid #0f172a; padding-bottom:1rem; margin-bottom:1rem;">
             <div>
-              <h2 style="font-family:var(--font-heading); color:#0284c7; margin:0;">OneNet Solutions</h2>
-              <p style="margin:2px 0; font-size:12px; color:#475569;">OneNet Solutions Enterprise Suite</p>
+              <h2 style="font-family:var(--font-heading); color:#0284c7; margin:0;">${AppState.activeCompany?.name || 'Bin Ishaq Softs'}</h2>
+              <p style="margin:2px 0; font-size:12px; color:#475569;">${AppState.activeCompany?.legal_name || 'Bin Ishaq Softs Enterprise Suite'}</p>
               <p style="margin:2px 0; font-size:12px; color:#475569;">Muslim Town, Lahore, Pakistan</p>
               <p style="margin:2px 0; font-size:12px; color:#475569;">NTN: 7492019-2 | STRN: 11-22-3344-555</p>
             </div>

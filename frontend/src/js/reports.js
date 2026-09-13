@@ -56,7 +56,7 @@ export async function renderReportsView(container) {
 }
 
 function renderPosZReport(content) {
-  const comp = AppState.activeCompany || { name: 'OneNet Solutions' };
+  const comp = AppState.activeCompany || { name: 'Bin Ishaq Softs' };
   const today = new Date().toLocaleDateString('en-PK', { dateStyle: 'full' });
 
   content.innerHTML = `

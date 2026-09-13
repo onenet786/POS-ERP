@@ -81,8 +81,8 @@ export function printDocument(title, htmlBodyContent, customStyles = '') {
 // 80mm / 58mm Thermal POS Receipt Generator
 export function printThermalReceipt(transaction) {
   const company = AppState.activeCompany || {
-    name: 'OneNet Solutions',
-    legal_name: 'OneNet Solutions Enterprise Suite',
+    name: 'Bin Ishaq Softs',
+    legal_name: 'Bin Ishaq Softs Enterprise Suite',
     address: 'Muslim Town, Lahore, Pakistan',
     phone: '+92 300 1234567',
     tax_id: 'NTN: 7492019-2'
@@ -195,8 +195,8 @@ export function printThermalReceipt(transaction) {
 
       <div class="footer">
         <div class="font-bold">* FBR / Sales Tax Compliant *</div>
-        <div>Thank you for shopping with OneNet Solutions!</div>
-        <div style="font-size:9px; color:#555; margin-top:3px;">Powered by OneNet Solutions Enterprise Suite</div>
+        <div>Thank you for shopping with ${company.name || 'Bin Ishaq Softs'}!</div>
+        <div style="font-size:9px; color:#555; margin-top:3px;">Powered by Bin Ishaq Softs Enterprise Suite</div>
       </div>
     </div>
   `;
@@ -207,8 +207,8 @@ export function printThermalReceipt(transaction) {
 // A4 Official Tax E-Invoice Generator
 export function printA4TaxInvoice(inv) {
   const company = AppState.activeCompany || {
-    name: 'OneNet Solutions',
-    legal_name: 'OneNet Solutions Enterprise Suite',
+    name: 'Bin Ishaq Softs',
+    legal_name: 'Bin Ishaq Softs Enterprise Suite',
     address: 'Muslim Town, Lahore, Pakistan',
     phone: '+92 300 1234567',
     tax_id: 'NTN: 7492019-2',
@@ -434,7 +434,7 @@ export function printA4TaxInvoice(inv) {
 
       <div class="signature-area">
         <div>
-          <div>* Computer generated digital tax invoice from OneNet Solutions Enterprise Suite.</div>
+          <div>* Computer generated digital tax invoice from ${company.name || 'Bin Ishaq Softs'} Enterprise Suite.</div>
           <div style="margin-top:2px;">Thank you for your business!</div>
         </div>
         <div class="sign-line">
@@ -450,7 +450,7 @@ export function printA4TaxInvoice(inv) {
 
 // Barcode Sticker Sheet Generator (3x4 or 3x8 Grid) with Real Code 128 Barcodes
 export function printBarcodeStickers(product, count = 12, format = 'a4_3x8') {
-  const company = AppState.activeCompany || { name: 'OneNet Solutions' };
+  const company = AppState.activeCompany || { name: 'Bin Ishaq Softs' };
   const barcodeSvg = generateBarcodeSvg(product.barcode || product.sku || '896400010101', {
     width: 1.5,
     height: 36,
@@ -521,7 +521,7 @@ export function printBarcodeStickers(product, count = 12, format = 'a4_3x8') {
   const html = isThermalRoll ? `
     ${Array.from({ length: count }).map(() => `
       <div class="thermal-label">
-        <div class="st-title">${company.name || 'OneNet Solutions'}</div>
+        <div class="st-title">${company.name || 'Bin Ishaq Softs'}</div>
         <div class="st-name">${product.name.slice(0, 26)}</div>
         <div class="st-barcode">${barcodeSvg}</div>
         <div class="st-price">${formatCurrency(product.selling_price)}</div>
@@ -531,7 +531,7 @@ export function printBarcodeStickers(product, count = 12, format = 'a4_3x8') {
     <div class="sticker-grid">
       ${Array.from({ length: count }).map(() => `
         <div class="sticker">
-          <div class="st-title">${company.name || 'OneNet Solutions'}</div>
+          <div class="st-title">${company.name || 'Bin Ishaq Softs'}</div>
           <div class="st-name">${product.name.slice(0, 26)}</div>
           <div class="st-barcode">${barcodeSvg}</div>
           <div class="st-price">${formatCurrency(product.selling_price)}</div>
@@ -546,7 +546,7 @@ export function printBarcodeStickers(product, count = 12, format = 'a4_3x8') {
 // Official Employee Payslip Generator
 export function printEmployeePayslip(payslip) {
   const company = AppState.activeCompany || {
-    name: 'OneNet Solutions',
+    name: 'Bin Ishaq Softs',
     address: 'Muslim Town, Lahore, Pakistan'
   };
 
@@ -568,7 +568,7 @@ export function printEmployeePayslip(payslip) {
     <div>
       <div class="header">
         <div>
-          <div class="title">${company.name || 'OneNet Solutions'}</div>
+          <div class="title">${company.name || 'Bin Ishaq Softs'}</div>
           <div class="sub">${company.address || 'Muslim Town, Lahore'} | HR & Payroll Department</div>
         </div>
         <div style="text-align: right;">

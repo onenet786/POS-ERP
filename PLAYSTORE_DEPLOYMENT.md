@@ -1,6 +1,6 @@
-# 🚀 OneNet Solutions - Google Play Store Publishing Guide
+# 🚀 Bin Ishaq Softs - Google Play Store Publishing Guide
 
-This guide walks you through generating the **Google Play Store App Bundle (`.aab`)** and **Direct APK (`.apk`)** for **OneNet Solutions Enterprise Suite** (`com.binishaqsoft.bierppos`), so your customers and field agents can download and install it directly from the **Google Play Store**!
+This guide walks you through generating the **Google Play Store App Bundle (`.aab`)** and **Direct APK (`.apk`)** for **Bin Ishaq Softs Enterprise Suite** (`com.binishaqsoft.bierppos`), so your customers and field agents can download and install it directly from the **Google Play Store**!
 
 ---
 
@@ -36,7 +36,7 @@ This generates:
 
 1. Go to the [Google Play Console](https://play.google.com/console).
 2. Click **Create App**:
-   - **App Name**: `OneNet Solutions ERP & POS`
+   - **App Name**: `Bin Ishaq Softs ERP & POS`
    - **Default Language**: English (or Urdu / your target language)
    - **App or Game**: App
    - **Free or Paid**: Free (or your business model)
@@ -51,7 +51,7 @@ In Google Play Console under **Store presence > Main store listing**:
 - **Short description**:
   > Complete Cloud ERP, Touch POS, Multi-Company Accounting & Field Sales Order Booker.
 - **Full description**:
-  > OneNet Solutions Enterprise Suite is an all-in-one business management mobile application. Features include:
+  > Bin Ishaq Softs Enterprise Suite is an all-in-one business management mobile application. Features include:
   > - Touch Point of Sale (POS) with Camera & Barcode Scanner
   > - Field Sales Order Booker with Live GPS Fleet Tracking
   > - Multi-Company Cloud Accounting & Financial Ledgers
@@ -68,7 +68,7 @@ In Google Play Console under **Store presence > Main store listing**:
 1. Go to **Release > Production** (or **Closed Testing** first).
 2. Click **Create new release**.
 3. Under **App bundles**, upload `app-release-bundle.aab`.
-4. Enter Release notes (e.g., `Initial release of OneNet Solutions ERP & POS Enterprise Suite`).
+4. Enter Release notes (e.g., `Initial release of Bin Ishaq Softs ERP & POS Enterprise Suite`).
 5. Click **Next** and **Save**.
 
 ---

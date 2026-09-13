@@ -26,7 +26,7 @@ export function renderCompanySwitcher() {
   const container = document.getElementById('company-switcher-container');
   if (!container) return;
 
-  const current = AppState.activeCompany || { id: 1, name: 'OneNet Solutions' };
+  const current = AppState.activeCompany || { id: 1, name: 'Bin Ishaq Softs' };
   const assigned = AppState.currentUser?.assigned_companies || [1, 2, 3];
   const accessibleCompanies = AppState.companies.filter(c => assigned.includes(c.id));
 
@@ -206,11 +206,11 @@ export function openCreateCompanyModal() {
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label">Company / Branch Name:</label>
-            <input type="text" id="new-comp-name" class="form-control" placeholder="e.g. OneNet Solutions Multan" required />
+            <input type="text" id="new-comp-name" class="form-control" placeholder="e.g. Bin Ishaq Softs Multan" required />
           </div>
           <div class="form-group">
             <label class="form-label">Legal Name:</label>
-            <input type="text" id="new-comp-legal" class="form-control" placeholder="e.g. OneNet Multan Regional Branch Ltd" />
+            <input type="text" id="new-comp-legal" class="form-control" placeholder="e.g. Bin Ishaq Multan Regional Branch Ltd" />
           </div>
           <div class="form-group">
             <label class="form-label">City:</label>

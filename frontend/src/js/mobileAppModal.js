@@ -30,7 +30,7 @@ export async function openMobileAppModal() {
               📱 TRUE MOBILE PWA CLIENT
             </div>
             <h2 style="font-family:var(--font-heading); font-size:1.35rem; font-weight:800; margin:0; color:var(--text-main);">
-              OneNet Mobile Sales & Order Booker
+              Bin Ishaq Mobile Sales & Order Booker
             </h2>
             <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 0 0;">
               Zero-install progressive web application for Android, iPhone, iPad and handheld POS.
@@ -134,7 +134,7 @@ export async function openMobileAppModal() {
       window.deferredInstallPrompt.prompt();
       window.deferredInstallPrompt.userChoice.then((res) => {
         if (res.outcome === 'accepted') {
-          showToast('OneNet ERP is being installed on your home screen!', 'success');
+          showToast('Bin Ishaq ERP is being installed on your home screen!', 'success');
           modal.remove();
         }
       });

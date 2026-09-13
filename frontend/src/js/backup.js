@@ -40,7 +40,7 @@ export function renderBackupView(container) {
           <span class="tag tag-warning">Admin Verification Required</span>
         </div>
         <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.5; margin-bottom:1.25rem;">
-          Upload a previously exported OneNet Solutions backup file to restore accounts, customer lists, inventory balances, and system settings.
+          Upload a previously exported Bin Ishaq Softs backup file to restore accounts, customer lists, inventory balances, and system settings.
         </p>
 
         <div style="border: 2px dashed var(--border-color); border-radius:8px; padding:1.5rem; text-align:center; margin-bottom:1.25rem; cursor:pointer;" id="drop-restore-zone">

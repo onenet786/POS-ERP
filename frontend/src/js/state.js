@@ -2,8 +2,8 @@ export const AppState = {
   currentUser: JSON.parse(localStorage.getItem('onenet_user') || 'null'),
   activeCompany: JSON.parse(localStorage.getItem('onenet_active_company') || 'null') || {
     id: 1,
-    name: 'OneNet Solutions',
-    legal_name: 'OneNet Solutions Enterprise Suite (Head Office)',
+    name: 'Bin Ishaq Softs',
+    legal_name: 'Bin Ishaq Softs Enterprise Suite (Head Office)',
     address: 'Muslim Town, Lahore, Pakistan',
     phone: '+92 42 30000001',
     tax_id: 'NTN-7492019-2',

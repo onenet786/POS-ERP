@@ -147,9 +147,9 @@ INSERT INTO bom_items (bom_recipe_id, raw_product_id, required_quantity, unit_co
 
 -- 13. COMPANIES (MULTI-COMPANY EDITION)
 INSERT INTO companies (id, name, legal_name, tax_id, strn, phone, email, address, city, currency, is_active) VALUES
-(1, 'OneNet Solutions', 'OneNet Solutions Enterprise Suite (Head Office)', 'NTN-7492019-2', 'STRN-11-22-3344-555', '+92 42 30000001', 'info@onenetsolutions.com', 'Muslim Town, Lahore, Pakistan', 'Lahore', 'PKR', TRUE),
-(2, 'OneNet Retail Mart', 'OneNet Retail & Superstore Division', 'NTN-7492019-3', 'STRN-22-33-4455-666', '+92 21 35050505', 'retail@onenetsolutions.com', 'Shop 12-B, Mega Mall, Clifton', 'Karachi', 'PKR', TRUE),
-(3, 'OneNet Wholesale', 'OneNet Wholesale & Regional Distribution', 'NTN-7492019-4', 'STRN-33-44-5566-777', '+92 51 2223344', 'wholesale@onenetsolutions.com', 'Sector I-9 Industrial Area', 'Islamabad', 'PKR', TRUE)
+(1, 'Bin Ishaq Softs', 'Bin Ishaq Softs Enterprise Suite (Head Office)', 'NTN-7492019-2', 'STRN-11-22-3344-555', '+92 42 30000001', 'info@binishaqsoft.com', 'Muslim Town, Lahore, Pakistan', 'Lahore', 'PKR', TRUE),
+(2, 'Bin Ishaq Retail Mart', 'Bin Ishaq Retail & Superstore Division', 'NTN-7492019-3', 'STRN-22-33-4455-666', '+92 21 35050505', 'retail@binishaqsoft.com', 'Shop 12-B, Mega Mall, Clifton', 'Karachi', 'PKR', TRUE),
+(3, 'Bin Ishaq Wholesale', 'Bin Ishaq Wholesale & Regional Distribution', 'NTN-7492019-4', 'STRN-33-44-5566-777', '+92 51 2223344', 'wholesale@binishaqsoft.com', 'Sector I-9 Industrial Area', 'Islamabad', 'PKR', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 -- User Company Grants

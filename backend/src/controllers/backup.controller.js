@@ -40,7 +40,7 @@ export async function exportDatabaseBackup(req, res) {
       ]);
 
       snapshot = {
-        app: 'OneNet Solutions Enterprise Suite',
+        app: 'Bin Ishaq Softs Enterprise Suite',
         version: '2.0.0-Enterprise',
         exported_at: new Date().toISOString(),
         database: process.env.PGDATABASE || 'bierppos',
@@ -64,7 +64,7 @@ export async function exportDatabaseBackup(req, res) {
     } else {
       const store = getMockStore();
       snapshot = {
-        app: 'OneNet Solutions Enterprise Suite',
+        app: 'Bin Ishaq Softs Enterprise Suite',
         version: '2.0.0-Enterprise',
         exported_at: new Date().toISOString(),
         tables: {
@@ -85,7 +85,7 @@ export async function exportDatabaseBackup(req, res) {
     }
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="OneNet-Enterprise-Backup-${timestamp}.json"`);
+    res.setHeader('Content-Disposition', `attachment; filename="BinIshaq-Enterprise-Backup-${timestamp}.json"`);
     res.send(JSON.stringify(snapshot, null, 2));
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
