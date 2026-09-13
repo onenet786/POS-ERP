@@ -282,9 +282,29 @@ export function openBarcodeScannerModal({
   // Launch Camera with Direct MediaStream + ZXing
   const startScanner = async (specificDeviceId = null) => {
     try {
-      permOverlay.style.display = 'none';
-      statusText.innerHTML = `🔄 Starting camera...`;
-      statusText.style.color = '#38bdf8';
+      // Security Check: Is browser running in a Secure Context (HTTPS or localhost)?
+      const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      const isHttps = window.location.protocol === 'https:' || isLocal;
+
+      if (!isHttps || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        permOverlay.style.display = 'flex';
+        permOverlay.innerHTML = `
+          <div style="font-size: 2.5rem; margin-bottom: 8px;">🔒</div>
+          <h4 style="font-size: 1.05rem; color: #ef4444; font-weight: 700; margin-bottom: 6px;">HTTPS Connection Required</h4>
+          <p style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.45; margin-bottom: 14px; max-width: 330px;">
+            You are browsing via <b style="color:#ef4444;">http://</b> (Not Secure).<br/>
+            Google Chrome & Safari <b>permanently disable the camera API</b> on non-HTTPS sites to protect privacy.
+          </p>
+          <a href="https://${window.location.host}${window.location.pathname}${window.location.hash}" class="btn btn-primary btn-sm" style="padding: 0.65rem 1.25rem; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); text-decoration: none;">
+            🔒 Switch to Secure HTTPS (https://)
+          </a>
+          <p style="font-size: 0.72rem; color: #94a3b8; margin-top: 10px;">
+            Tap the button above to switch to secure mode.
+          </p>
+        `;
+        statusText.innerHTML = `<span style="color:#ef4444; font-weight:700;">🔒 HTTPS required for camera access</span>`;
+        return;
+      }
 
       // 1. Direct standard getUserMedia to immediately trigger permission and display video
       const constraints = {
