@@ -2,6 +2,10 @@ import QRCode from 'qrcode';
 import { getMockStore, query, isPostgresActive } from '../config/db.js';
 import { LedgerService } from '../services/ledgerService.js';
 import { broadcastEvent } from '../server.js';
+import { reverseGeocodeCoordinates } from '../services/geocodingService.js';
+
+export { reverseGeocodeCoordinates };
+
 
 export async function getSalesOrders(req, res) {
   try {
@@ -217,9 +221,20 @@ export async function getCustomers(req, res) {
 export async function getBookerLocations(req, res) {
   try {
     const store = getMockStore();
+    let locations = store.booker_locations || [];
+    if (isPostgresActive()) {
+      try {
+        const blRes = await query('SELECT * FROM booker_locations ORDER BY updated_at DESC');
+        if (blRes.rows && blRes.rows.length > 0) {
+          locations = blRes.rows;
+        }
+      } catch (err) {
+        console.warn('[DB] getBookerLocations PG notice:', err.message);
+      }
+    }
     res.json({
       success: true,
-      locations: store.booker_locations || []
+      locations
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -258,9 +273,18 @@ export async function updateBookerLocation(req, res) {
     const now = new Date().toISOString();
 
     let finalHumanLocation = human_location;
-    if (!finalHumanLocation || finalHumanLocation.includes('°') || finalHumanLocation === 'Field Location' || finalHumanLocation === 'Field Location Identified') {
+    if (
+      !finalHumanLocation ||
+      finalHumanLocation.includes('°') ||
+      finalHumanLocation === 'Field Location' ||
+      finalHumanLocation === 'Field Location Identified' ||
+      finalHumanLocation.startsWith('Store Counter') ||
+      finalHumanLocation === 'Live Field Visit'
+    ) {
       finalHumanLocation = await reverseGeocodeCoordinates(latitude, longitude);
     }
+
+    const cleanAddress = finalHumanLocation || 'Live Field Route';
 
     if (existing) {
       existing.latitude = Number(latitude);
@@ -272,7 +296,7 @@ export async function updateBookerLocation(req, res) {
       if (status) existing.status = status;
       if (shop_id) existing.current_shop_id = Number(shop_id);
       if (shop_name) existing.current_shop_name = shop_name;
-      if (address) existing.address = address;
+      existing.address = cleanAddress;
       existing.updated_at = now;
     } else {
       existing = {
@@ -289,7 +313,7 @@ export async function updateBookerLocation(req, res) {
         status: status || 'CHECKED_IN',
         current_shop_id: shop_id ? Number(shop_id) : 2,
         current_shop_name: shop_name || 'Al-Madina Superstore',
-        address: address || 'Current Field Location',
+        address: cleanAddress,
         created_at: now,
         updated_at: now
       };
@@ -311,7 +335,7 @@ export async function updateBookerLocation(req, res) {
               Number(latitude), Number(longitude), Number(accuracy || 10),
               Number(battery_level || 88), Number(speed || 0), status || 'CHECKED_IN',
               shop_id ? Number(shop_id) : null, shop_name || null,
-              address || null, finalHumanLocation, userId
+              cleanAddress, finalHumanLocation, userId
             ]
           );
         } else {
@@ -323,7 +347,7 @@ export async function updateBookerLocation(req, res) {
               userId, bookerName, phone, Number(latitude), Number(longitude),
               Number(accuracy || 10), Number(battery_level || 88), Number(speed || 0),
               status || 'CHECKED_IN', shop_id ? Number(shop_id) : null, shop_name || null,
-              address || null, finalHumanLocation
+              cleanAddress, finalHumanLocation
             ]
           );
         }
@@ -345,52 +369,6 @@ export async function updateBookerLocation(req, res) {
   }
 }
 
-export async function reverseGeocodeCoordinates(lat, lng) {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-    const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`;
-    const res = await fetch(nomUrl, {
-      headers: { 'User-Agent': 'BinIshaqSoftsERP/2.0 (info@binishaqsoft.com)' },
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.address) {
-        const a = data.address;
-        const place = a.residential || a.suburb || a.neighbourhood || a.road || a.commercial || a.village || a.town || '';
-        const city = a.city || a.town || a.county || a.municipality || '';
-        const state = a.state || '';
-        const country = a.country || '';
-        const parts = [place, city, state, country].filter(p => p && p.trim().length > 0);
-        const unique = parts.filter((item, pos, arr) => !pos || item !== arr[pos - 1]);
-        if (unique.length > 0) {
-          return unique.join(', ');
-        }
-      }
-      if (data.display_name) {
-        return data.display_name.split(',').slice(0, 3).join(', ').trim();
-      }
-    }
-  } catch (err) {
-    try {
-      const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
-      const bdcRes = await fetch(bdcUrl, { signal: AbortSignal.timeout(3500) });
-      if (bdcRes.ok) {
-        const b = await bdcRes.json();
-        const parts = [];
-        if (b.locality && b.locality !== b.city) parts.push(b.locality);
-        if (b.city) parts.push(b.city);
-        if (b.principalSubdivision && b.principalSubdivision !== b.city) parts.push(b.principalSubdivision);
-        if (b.countryName) parts.push(b.countryName);
-        if (parts.length > 0) return parts.join(', ');
-      }
-    } catch (_) {}
-  }
-  return 'Field Location Identified';
-}
-
 export async function getReverseGeocode(req, res) {
   try {
     const { lat, lng } = req.query;
@@ -403,3 +381,4 @@ export async function getReverseGeocode(req, res) {
     res.status(500).json({ success: false, message: err.message, location_name: 'Field Location Identified' });
   }
 }
+

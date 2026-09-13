@@ -95,6 +95,19 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
 });
 
+// Server Error Handling (graceful port conflict message)
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[CRITICAL] Port ${PORT} is already in use by another running process (such as PM2 apexerppos-api).`);
+    console.error(`If on production server, do not run 'npm start' directly. Instead run:`);
+    console.error(`  pm2 restart apexerppos-api`);
+    console.error(`  or check running processes: netstat -nlp | grep :${PORT}\n`);
+    process.exit(1);
+  } else {
+    console.error('[Server Error]', err);
+  }
+});
+
 // Bootstrap Server & Database
 server.listen(PORT, async () => {
   console.log('====================================================');
@@ -104,3 +117,4 @@ server.listen(PORT, async () => {
   console.log('====================================================');
   await initDb();
 });
+

@@ -1,6 +1,8 @@
 import { getMockStore, query, isPostgresActive } from '../config/db.js';
+import { reverseGeocodeCoordinates } from '../services/geocodingService.js';
 
 export async function getDashboardKPIs(req, res) {
+
   try {
     const store = getMockStore();
 
@@ -52,7 +54,32 @@ export async function getDashboardKPIs(req, res) {
          console.warn('[DB] Failed to query booker_locations from PostgreSQL:', err.message);
        }
     }
+
+    // Auto-resolve any missing or outdated 'Store Counter' human_location on bookers
+    for (const b of bookerLocations) {
+      if (
+        !b.human_location ||
+        b.human_location.startsWith('Store Counter') ||
+        b.human_location.includes('Field Location Identified') ||
+        b.human_location.includes('°')
+      ) {
+        if (b.latitude && b.longitude) {
+          b.human_location = await reverseGeocodeCoordinates(b.latitude, b.longitude);
+          if (!b.address || b.address.startsWith('Store Counter')) {
+            b.address = b.human_location;
+          }
+          if (isPostgresActive() && b.id) {
+            query(
+              'UPDATE booker_locations SET human_location = $1, address = $2 WHERE id = $3',
+              [b.human_location, b.address, b.id]
+            ).catch(() => {});
+          }
+        }
+      }
+    }
+
     const activeBookersCount = bookerLocations.filter(b => b.status !== 'OFFLINE').length;
+
 
     res.json({
       success: true,

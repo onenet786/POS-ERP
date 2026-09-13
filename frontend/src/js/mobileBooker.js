@@ -37,16 +37,17 @@ export function renderMobileBookerView(container) {
 
       <!-- Customer Selector -->
       <div class="glass-panel" style="margin-bottom:1rem; padding:1rem;">
-        <label class="form-label">Select Shop / Customer:</label>
+        <label class="form-label">Select Target Shop / Retailer:</label>
         <select id="mobile-cust-select" class="form-control" style="font-size:0.95rem;">
-          ${AppState.customers.map(c => `
+          ${AppState.customers.filter(c => c.id !== 1).map(c => `
             <option value="${c.id}">${c.business_name || c.name} - ${c.city}</option>
           `).join('')}
         </select>
         <div id="cust-balance-preview" style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">
-          Outstanding Balance: <strong style="color:#f87171;">${formatCurrency(AppState.customers[1]?.current_balance || 0)}</strong>
+          Outstanding Balance: <strong style="color:#f87171;">${formatCurrency(AppState.customers.find(c => c.id !== 1)?.current_balance || 0)}</strong>
         </div>
       </div>
+
 
       <!-- Product Catalog Cards -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
@@ -168,16 +169,23 @@ function acquireGps(isManualCheckin = false) {
         }
 
         const humanLocation = await getHumanReadableLocation(lat, lng);
+        AppState.mobileCart.humanLocation = humanLocation;
 
         if (text) {
-          text.innerHTML = `📍 <strong>${humanLocation}</strong> <span style="font-size:0.75rem; color:#34d399; font-weight:600;">(±${accuracy}m)</span>`;
+          text.innerHTML = `
+            <div style="font-weight:700; color:#ffffff; line-height:1.35; font-size:0.92rem;">📍 ${humanLocation}</div>
+            <div style="font-size:0.75rem; color:#38bdf8; font-family:var(--font-mono); margin-top:4px; display:flex; gap:10px; align-items:center;">
+              <span>🛰️ GPS: <strong>${lat.toFixed(5)}°, ${lng.toFixed(5)}°</strong></span>
+              <span style="color:#34d399; font-weight:600;">(±${accuracy}m)</span>
+            </div>
+          `;
           text.style.color = '#34d399';
         }
 
         sendLiveLocationToServer(lat, lng, accuracy, 'CHECKED_IN', speed, humanLocation);
 
         if (isManualCheckin) {
-          showToast(`✓ Check-in verified at ${humanLocation} (±${accuracy}m)`, 'success');
+          showToast(`✓ Check-in verified: ${humanLocation}`, 'success');
         }
       },
       (err) => {
@@ -211,9 +219,12 @@ function acquireGps(isManualCheckin = false) {
 async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECKED_IN', speed = 0.0, humanLocation = null) {
   try {
     const custSelect = document.getElementById('mobile-cust-select');
-    const custId = custSelect ? custSelect.value : (AppState.customers[0]?.id || 1);
-    const cust = AppState.customers.find(c => c.id === Number(custId));
-    const shopName = cust ? (cust.business_name || cust.name) : 'Customer Shop';
+    const defaultCust = AppState.customers.find(c => c.id !== 1) || AppState.customers[0];
+    const custId = custSelect?.value ? Number(custSelect.value) : (defaultCust?.id || 2);
+    const cust = AppState.customers.find(c => c.id === custId);
+    const shopName = cust ? (cust.business_name || cust.name) : 'Field Route';
+
+    const resolvedLocation = humanLocation || AppState.mobileCart.humanLocation || null;
 
     let batteryLevel = 100;
     if ('getBattery' in navigator) {
@@ -226,14 +237,14 @@ async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECK
     const payload = {
       latitude: lat,
       longitude: lng,
-      human_location: humanLocation,
+      human_location: resolvedLocation,
       accuracy: Math.round(accuracy),
       battery_level: batteryLevel,
       speed: Number(speed) || 0.0,
       status: status,
       shop_id: custId,
       shop_name: shopName,
-      address: humanLocation ? `${shopName} • ${humanLocation}` : (cust ? `${cust.address}, ${cust.city}` : 'Live Field Visit')
+      address: resolvedLocation ? `${shopName} • ${resolvedLocation}` : 'Live Field Visit'
     };
 
     const res = await Api.post('/sales/booker/location', payload);
@@ -255,11 +266,24 @@ function attachMobileEvents() {
   });
 
   // Re-sync location with selected shop when customer changes
-  document.getElementById('mobile-cust-select')?.addEventListener('change', () => {
+  document.getElementById('mobile-cust-select')?.addEventListener('change', (e) => {
+    const selectedCust = AppState.customers.find(c => c.id === Number(e.target.value));
+    const balEl = document.querySelector('#cust-balance-preview strong');
+    if (balEl && selectedCust) {
+      balEl.textContent = formatCurrency(selectedCust.current_balance || 0);
+    }
     if (AppState.mobileCart.geoLat && AppState.mobileCart.geoLng) {
-      sendLiveLocationToServer(AppState.mobileCart.geoLat, AppState.mobileCart.geoLng, 10, 'CHECKED_IN');
+      sendLiveLocationToServer(
+        AppState.mobileCart.geoLat,
+        AppState.mobileCart.geoLng,
+        10,
+        'CHECKED_IN',
+        0,
+        AppState.mobileCart.humanLocation
+      );
     }
   });
+
 
   document.querySelectorAll('.mobile-add-btn').forEach(btn => {
     btn.addEventListener('click', () => {

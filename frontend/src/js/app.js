@@ -484,16 +484,25 @@ async function renderDashboardView(container) {
                 </span>
               </div>
 
-              <!-- Human Readable Live Location -->
-              <div style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.22); border-radius:8px; padding:0.75rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+              <!-- Human Readable Live Location & Coordinates -->
+              <div style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.25); border-radius:8px; padding:0.75rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                   <span style="font-size:0.72rem; text-transform:uppercase; color:#38bdf8; font-weight:800; display:flex; align-items:center; gap:4px;">
                     📍 Real-Time Location:
                   </span>
-                  <span style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Live GPS</span>
+                  <span style="font-size:0.7rem; color:#34d399; font-weight:700; background:rgba(52,211,153,0.12); padding:2px 6px; border-radius:4px; border:1px solid rgba(52,211,153,0.25);">Live GPS</span>
                 </div>
-                <div style="font-size:0.92rem; font-weight:700; color:#ffffff; line-height:1.35;">
-                  ${b.human_location || b.address || 'Field Location Identified'}
+                <div style="font-size:0.95rem; font-weight:700; color:#ffffff; line-height:1.4;">
+                  ${(b.human_location && !b.human_location.startsWith('Store Counter')) ? b.human_location : ((b.address && !b.address.startsWith('Store Counter')) ? b.address : 'Field Location Identified')}
+                </div>
+                <!-- Prominent GPS Coordinates -->
+                <div style="margin-top:6px; padding-top:6px; border-top:1px dashed rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-size:0.78rem;">
+                  <span style="color:#94a3b8;">
+                    🛰️ GPS: <strong style="color:#38bdf8;">${Number(b.latitude).toFixed(5)}°, ${Number(b.longitude).toFixed(5)}°</strong>
+                  </span>
+                  <span style="color:var(--text-muted); font-size:0.72rem;">
+                    ±${b.accuracy || 10}m
+                  </span>
                 </div>
               </div>
 
@@ -502,7 +511,7 @@ async function renderDashboardView(container) {
                 <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:6px 10px;">
                   <span style="font-size:0.68rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; display:block;">Target Shop:</span>
                   <span style="font-size:0.8rem; color:#34d399; font-weight:700; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    🏪 ${b.current_shop_name || 'Retail Market'}
+                    🏪 ${b.current_shop_name && b.current_shop_name !== 'General Counter Sale' ? b.current_shop_name : 'Field Retail Route'}
                   </span>
                 </div>
                 <div style="background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between;">
@@ -521,7 +530,7 @@ async function renderDashboardView(container) {
               <div style="display:flex; gap:8px; margin-top:2px;">
                 <a href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none; color:#38bdf8; border-color:rgba(56,189,248,0.3); font-size:0.8rem; font-weight:600;">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                  <span>View on Map (${b.human_location ? b.human_location.split(',')[0] : 'Map Pin'})</span>
+                  <span>Open on Map (${Number(b.latitude).toFixed(5)}°, ${Number(b.longitude).toFixed(5)}°)</span>
                 </a>
               </div>
             </div>

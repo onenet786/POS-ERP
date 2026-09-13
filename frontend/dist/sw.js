@@ -1,7 +1,8 @@
-const CACHE_NAME = 'binishaq-suite-v5';
+const CACHE_NAME = 'binishaq-suite-v6';
 const ASSETS_TO_CACHE = [
   '/manifest.json'
 ];
+
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
