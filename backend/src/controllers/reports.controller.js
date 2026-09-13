@@ -1,4 +1,4 @@
-import { getMockStore } from '../config/db.js';
+import { getMockStore, query, isPostgresActive } from '../config/db.js';
 
 export async function getDashboardKPIs(req, res) {
   try {
@@ -41,7 +41,17 @@ export async function getDashboardKPIs(req, res) {
       { day: 'Sun', pos: todayPosSales > 0 ? todayPosSales : 39500, wholesale: 15400 }
     ];
 
-    const bookerLocations = store.booker_locations || [];
+    let bookerLocations = store.booker_locations || [];
+    if (isPostgresActive()) {
+       try {
+         const blRes = await query('SELECT * FROM booker_locations ORDER BY updated_at DESC');
+         if (blRes.rows && blRes.rows.length > 0) {
+           bookerLocations = blRes.rows;
+         }
+       } catch (err) {
+         console.warn('[DB] Failed to query booker_locations from PostgreSQL:', err.message);
+       }
+    }
     const activeBookersCount = bookerLocations.filter(b => b.status !== 'OFFLINE').length;
 
     res.json({

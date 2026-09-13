@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# OneNet Solutions ERP - Google Play Store AAB & APK Build Script
+# Bin Ishaq Softs Enterprise Suite - Google Play Store AAB & APK Build Script
 # Uses Google's official Bubblewrap CLI (Trusted Web Activity - TWA)
 # ==============================================================================
 
 set -e
 
 echo "=================================================================="
-echo "    OneNet Solutions - Building Google Play Store Package         "
+echo "    Bin Ishaq Softs - Building Google Play Store Package          "
 echo "=================================================================="
 
 cd "$(dirname "$0")"

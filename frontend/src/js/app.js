@@ -108,8 +108,15 @@ async function startWorkspace() {
     _isWorkspaceStarted = true;
   }
 
-  // Render initial module
-  const initialHash = window.location.hash.slice(1) || 'dashboard';
+  // Route determination based on role
+  const userRole = AppState.currentUser?.role_name?.toLowerCase() || '';
+  const isBooker = AppState.currentUser?.role_id === 4 || userRole.includes('booker');
+
+  let initialHash = window.location.hash.slice(1);
+  if (!initialHash || (isBooker && initialHash === 'dashboard')) {
+    initialHash = isBooker ? 'mobile_booker' : 'dashboard';
+    window.location.hash = `#${initialHash}`;
+  }
   navigateTo(initialHash);
 }
 
@@ -214,10 +221,19 @@ function navigateTo(moduleName) {
   document.getElementById('main-sidebar')?.classList.remove('drawer-open');
   document.getElementById('sidebar-backdrop')?.classList.remove('active');
 
+  const userRole = AppState.currentUser?.role_name?.toLowerCase() || '';
+  const isBooker = AppState.currentUser?.role_id === 4 || userRole.includes('booker');
+
+  // Bookers should directly access mobile order booking rather than executive financials
+  if (isBooker && (moduleName === 'dashboard' || !moduleName)) {
+    moduleName = 'mobile_booker';
+    window.location.hash = '#mobile_booker';
+  }
+
   // Check RBAC permission
   if (moduleName !== 'dashboard' && !hasPermission(moduleName, 'view')) {
     showToast(`Access Denied: Your assigned role (${AppState.currentUser?.role_name}) does not have permission to view ${moduleName}`, 'error');
-    moduleName = 'dashboard';
+    moduleName = isBooker ? 'mobile_booker' : 'dashboard';
   }
 
   AppState.activeModule = moduleName;
@@ -281,6 +297,11 @@ async function renderDashboardView(container) {
     const { kpis, low_stock_items, expiring_batches, sales_trend, active_booker_locations } = res;
     const bookers = active_booker_locations || [];
 
+    const isManagerOrAdmin = AppState.currentUser?.role_id === 1 || 
+                             AppState.currentUser?.role_id === 2 || 
+                             AppState.currentUser?.role_name?.toLowerCase().includes('admin') || 
+                             AppState.currentUser?.role_name?.toLowerCase().includes('manager');
+
     container.innerHTML = `
       <div class="page-header">
         <div>
@@ -288,9 +309,11 @@ async function renderDashboardView(container) {
           <p class="page-subtitle">Unified metrics, revenue velocity, cash positions, fleet tracking & inventory intelligence</p>
         </div>
         <div style="display:flex; gap:0.75rem;">
-          <button class="btn btn-outline" id="btn-dashboard-gps-track" style="display:inline-flex; align-items:center; gap:6px; color:#38bdf8; border-color:rgba(56,189,248,0.4);">
-            🛰️ Live Booker GPS
-          </button>
+          ${isManagerOrAdmin ? `
+            <button class="btn btn-outline" id="btn-dashboard-gps-track" style="display:inline-flex; align-items:center; gap:6px; color:#38bdf8; border-color:rgba(56,189,248,0.4);">
+              🛰️ Live Booker GPS
+            </button>
+          ` : ''}
           <button class="btn btn-primary" id="btn-quick-pos-launch">
             ⚡ Open POS Register
           </button>
@@ -401,6 +424,7 @@ async function renderDashboardView(container) {
         </div>
       </div>
 
+      ${isManagerOrAdmin ? `
       <!-- LIVE FIELD ORDER BOOKERS & GPS FLEET TRACKING SECTION -->
       <div class="glass-panel" id="section-booker-fleet-tracking" style="margin-bottom: 1.75rem; border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(8, 12, 20, 0.95));">
         <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
@@ -490,6 +514,7 @@ async function renderDashboardView(container) {
           `).join('')}
         </div>
       </div>
+      ` : ''}
 
       <!-- LOW STOCK & EXPIRING BATCHES TABLES -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
@@ -550,6 +575,10 @@ async function renderDashboardView(container) {
         </div>
       </div>
     `;
+
+    document.getElementById('btn-dashboard-gps-track')?.addEventListener('click', () => {
+      document.getElementById('section-booker-fleet-tracking')?.scrollIntoView({ behavior: 'smooth' });
+    });
 
     document.getElementById('btn-quick-pos-launch')?.addEventListener('click', () => {
       navigateTo('pos');

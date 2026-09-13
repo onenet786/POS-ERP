@@ -90,41 +90,71 @@ export function renderMobileBookerView(container) {
   attachMobileEvents();
 }
 
-function acquireGps() {
+function acquireGps(isManualCheckin = false) {
   const text = document.getElementById('gps-status-text');
+  if (text) {
+    text.innerHTML = `📡 Requesting Live GPS from Device...`;
+    text.style.color = '#38bdf8';
+  }
+
   if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        AppState.mobileCart.geoLat = pos.coords.latitude;
-        AppState.mobileCart.geoLng = pos.coords.longitude;
-        if (text) text.innerHTML = `📍 GPS Verified: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-        sendLiveLocationToServer(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'CHECKED_IN');
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = Math.round(pos.coords.accuracy || 10);
+        const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : 0;
+
+        AppState.mobileCart.geoLat = lat;
+        AppState.mobileCart.geoLng = lng;
+
+        if (text) {
+          text.innerHTML = `📍 Real GPS: ${lat.toFixed(5)}°, ${lng.toFixed(5)}° <span style="font-size:0.75rem; color:#34d399; font-weight:600;">(±${accuracy}m)</span>`;
+          text.style.color = '#34d399';
+        }
+
+        sendLiveLocationToServer(lat, lng, accuracy, 'CHECKED_IN', speed);
+
+        if (isManualCheckin) {
+          showToast(`✓ Shop Check-in verified with Real GPS (±${accuracy}m)`, 'success');
+        }
       },
-      () => {
-        // Fallback default coordinates (Karachi Store Area)
-        AppState.mobileCart.geoLat = 24.8607;
-        AppState.mobileCart.geoLng = 67.0011;
-        if (text) text.innerHTML = `📍 GPS Tagged: 24.8607° N, 67.0011° E (Store)`;
-        sendLiveLocationToServer(24.8607, 67.0011, 15, 'CHECKED_IN');
+      (err) => {
+        console.warn('[GPS Geolocation Notice]', err.code, err.message);
+        let msg = '⚠️ GPS Permission Required';
+        if (err.code === 1) {
+          msg = '⚠️ Location permission denied. Please enable Location in browser / phone settings.';
+        } else if (err.code === 2) {
+          msg = '⚠️ GPS position unavailable. Please ensure GPS is enabled on your phone.';
+        } else if (err.code === 3) {
+          msg = '⚠️ GPS request timed out. Please tap Check-in to retry.';
+        }
+
+        if (text) {
+          text.innerHTML = `<span style="color:#fbbf24; font-size:0.82rem;">${msg}</span>`;
+        }
+
+        if (isManualCheckin) {
+          showToast(msg, 'warning');
+        }
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   } else {
-    AppState.mobileCart.geoLat = 24.8607;
-    AppState.mobileCart.geoLng = 67.0011;
-    if (text) text.innerHTML = `📍 GPS Tagged: 24.8607° N, 67.0011° E`;
-    sendLiveLocationToServer(24.8607, 67.0011, 20, 'CHECKED_IN');
+    if (text) {
+      text.innerHTML = `<span style="color:#f87171;">⚠️ Geolocation is not supported by your browser</span>`;
+    }
   }
 }
 
-async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECKED_IN') {
+async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECKED_IN', speed = 0.0) {
   try {
     const custSelect = document.getElementById('mobile-cust-select');
     const custId = custSelect ? custSelect.value : (AppState.customers[0]?.id || 1);
     const cust = AppState.customers.find(c => c.id === Number(custId));
     const shopName = cust ? (cust.business_name || cust.name) : 'Customer Shop';
 
-    let batteryLevel = 88;
+    let batteryLevel = 100;
     if ('getBattery' in navigator) {
       try {
         const b = await navigator.getBattery();
@@ -137,14 +167,17 @@ async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECK
       longitude: lng,
       accuracy: Math.round(accuracy),
       battery_level: batteryLevel,
-      speed: 0.0,
+      speed: Number(speed) || 0.0,
       status: status,
       shop_id: custId,
       shop_name: shopName,
       address: cust ? `${cust.address}, ${cust.city}` : 'Live Field Visit'
     };
 
-    await Api.post('/sales/booker/location', payload);
+    const res = await Api.post('/sales/booker/location', payload);
+    if (res?.success) {
+      console.log('[GPS] Real location successfully transmitted to server:', payload);
+    }
   } catch (err) {
     console.warn('[GPS Sync] Notice:', err.message || err);
   }
@@ -156,8 +189,7 @@ function attachMobileEvents() {
   });
 
   document.getElementById('btn-refresh-gps')?.addEventListener('click', () => {
-    acquireGps();
-    showToast('Shop visit GPS coordinates updated & synced to dashboard', 'success');
+    acquireGps(true);
   });
 
   // Re-sync location with selected shop when customer changes

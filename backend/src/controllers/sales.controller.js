@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { getMockStore } from '../config/db.js';
+import { getMockStore, query, isPostgresActive } from '../config/db.js';
 import { LedgerService } from '../services/ledgerService.js';
 import { broadcastEvent } from '../server.js';
 
@@ -286,6 +286,41 @@ export async function updateBookerLocation(req, res) {
         updated_at: now
       };
       store.booker_locations.push(existing);
+    }
+
+    // Live PostgreSQL Upsert if Postgres is active
+    if (isPostgresActive()) {
+      try {
+        const checkRes = await query('SELECT id FROM booker_locations WHERE user_id = $1', [userId]);
+        if (checkRes.rows && checkRes.rows.length > 0) {
+          await query(
+            `UPDATE booker_locations 
+             SET latitude = $1, longitude = $2, accuracy = $3, battery_level = $4, 
+                 speed = $5, status = $6, current_shop_id = $7, current_shop_name = $8, 
+                 address = $9, updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = $10`,
+            [
+              Number(latitude), Number(longitude), Number(accuracy || 10),
+              Number(battery_level || 88), Number(speed || 0), status || 'CHECKED_IN',
+              shop_id ? Number(shop_id) : null, shop_name || null,
+              address || null, userId
+            ]
+          );
+        } else {
+          await query(
+            `INSERT INTO booker_locations 
+             (user_id, booker_name, phone, latitude, longitude, accuracy, battery_level, speed, status, current_shop_id, current_shop_name, address, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            [
+              userId, bookerName, phone, Number(latitude), Number(longitude),
+              Number(accuracy || 10), Number(battery_level || 88), Number(speed || 0),
+              status || 'CHECKED_IN', shop_id ? Number(shop_id) : null, shop_name || null, address || null
+            ]
+          );
+        }
+      } catch (dbErr) {
+        console.warn('[DB] Booker location upsert warning:', dbErr.message);
+      }
     }
 
     // Broadcast live event to connected dashboards via WebSocket
