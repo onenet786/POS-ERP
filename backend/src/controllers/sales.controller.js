@@ -29,7 +29,27 @@ export async function getSalesOrders(req, res) {
             so.geo_latitude,
             so.geo_longitude,
             so.notes,
-            so.created_at
+            so.created_at,
+            COALESCE(
+              (
+                SELECT json_agg(
+                  json_build_object(
+                    'id', soi.id,
+                    'product_id', soi.product_id,
+                    'name', COALESCE(p.name, 'Product Item'),
+                    'quantity', soi.quantity,
+                    'unit_price', soi.unit_price,
+                    'tax_rate', soi.tax_rate,
+                    'tax_amount', soi.tax_amount,
+                    'total_price', soi.total_price
+                  )
+                )
+                FROM sales_order_items soi
+                LEFT JOIN products p ON soi.product_id = p.id
+                WHERE soi.sales_order_id = so.id
+              ),
+              '[]'::json
+            ) as items
           FROM sales_orders so
           LEFT JOIN customers c ON so.customer_id = c.id
           LEFT JOIN users u ON so.salesperson_id = u.id
@@ -227,6 +247,7 @@ export async function createInvoice(req, res) {
       due_date: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
       customer_id: customer.id,
       customer_name: customer.business_name || customer.name,
+      sales_order_id: order_id ? Number(order_id) : null,
       subtotal,
       tax_amount,
       discount_amount: discount,
@@ -241,13 +262,54 @@ export async function createInvoice(req, res) {
 
     store.sales_invoices.unshift(newInvoice);
 
+    // If converted from a booked order, mark the order as INVOICED
+    if (order_id) {
+      const order = store.sales_orders.find(o => o.id === Number(order_id));
+      if (order) {
+        order.status = 'INVOICED';
+      }
+    }
+
+    // Deduct stock from products
+    for (const item of processedItems) {
+      const p = store.products.find(prod => prod.id === item.product_id);
+      if (p) {
+        p.stock = Math.max(0, p.stock - item.quantity);
+      }
+    }
+
+    // PostgreSQL Persistence
+    if (isPostgresActive()) {
+      try {
+        const invRes = await query(
+          `INSERT INTO sales_invoices 
+           (invoice_number, invoice_date, due_date, customer_id, sales_order_id, warehouse_id, subtotal, tax_amount, discount_amount, total_amount, paid_amount, balance_amount, status, einvoice_qr_code)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+           RETURNING id`,
+          [
+            invoice_number, newInvoice.invoice_date, newInvoice.due_date, customer.id,
+            order_id ? Number(order_id) : null, 1, subtotal, tax_amount, discount,
+            total_amount, paid, balance, newInvoice.status, qrCodeDataUri
+          ]
+        );
+        if (invRes.rows[0]?.id) {
+          newInvoice.id = invRes.rows[0].id;
+        }
+        if (order_id) {
+          await query(`UPDATE sales_orders SET status = 'INVOICED' WHERE id = $1`, [Number(order_id)]);
+        }
+      } catch (pgErr) {
+        console.warn('[DB] Failed to persist invoice / update order in PostgreSQL:', pgErr.message);
+      }
+    }
+
     // Update customer ledger balance
     customer.current_balance += balance;
 
     // Post to General Ledger: Debit AR (1200), Credit Sales Revenue (4020), Credit Tax (2020)
     await LedgerService.postAutomatedEntry({
       reference: invoice_number,
-      narration: `E-Invoice Generation for ${customer.business_name || customer.name}`,
+      narration: `E-Invoice Generation for ${customer.business_name || customer.name}${order_id ? ` (From Order #${order_id})` : ''}`,
       sourceDocument: 'SALES_INVOICE',
       sourceId: newInvoice.id,
       lines: [
@@ -256,6 +318,11 @@ export async function createInvoice(req, res) {
         ...(tax_amount > 0 ? [{ accountId: 2020, debit: 0, credit: tax_amount, memo: `Tax Payable` }] : [])
       ]
     });
+
+    broadcastEvent('NEW_INVOICE', { invoice_number, total: total_amount, customer: customer.name });
+    if (order_id) {
+      broadcastEvent('ORDER_STATUS_CHANGED', { order_id, status: 'INVOICED' });
+    }
 
     res.json({
       success: true,

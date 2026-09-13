@@ -3,7 +3,7 @@ import { AppState, formatCurrency, showToast, hasPermission } from './state.js';
 import { Api, RealtimeClient } from './api.js';
 import { renderPosView } from './pos.js';
 import { renderInventoryView } from './inventory.js';
-import { renderSalesView } from './sales.js';
+import { renderSalesView, openCreateInvoiceModal } from './sales.js';
 import { renderAccountingView } from './accounting.js';
 import { renderManufacturingView } from './manufacturing.js';
 import { renderMobileBookerView } from './mobileBooker.js';
@@ -739,14 +739,20 @@ async function renderDashboardView(container) {
                       ` : '<span style="color:var(--text-muted); font-size:0.75rem;">Counter / Web</span>'}
                     </td>
                     <td>
-                      <span class="tag ${o.status === 'CONFIRMED' || o.status === 'DELIVERED' ? 'tag-success' : 'tag-warning'}" style="font-weight:700;">
-                        ${o.status || 'PENDING'}
+                      <span class="tag ${o.status === 'INVOICED' ? 'tag-success' : (o.status === 'CONFIRMED' ? 'tag-info' : 'tag-warning')}" style="font-weight:700;">
+                        ${o.status === 'INVOICED' ? '✓ Invoiced' : (o.status || 'PENDING')}
                       </span>
                     </td>
                     <td>
-                      <button class="btn btn-outline btn-sm btn-convert-to-invoice" data-order-id="${o.id}" style="font-size:0.75rem; padding:3px 8px; border-color:rgba(56,189,248,0.3); color:#38bdf8;">
-                        View / Invoice
-                      </button>
+                      ${o.status === 'INVOICED' ? `
+                        <span style="font-size:0.75rem; color:#34d399; font-weight:700; background:rgba(52,211,153,0.12); padding:3px 8px; border-radius:4px; border:1px solid rgba(52,211,153,0.25); display:inline-flex; align-items:center; gap:4px;">
+                          ✓ Invoiced
+                        </span>
+                      ` : `
+                        <button class="btn btn-primary btn-sm btn-convert-to-invoice" data-order-id="${o.id}" style="font-size:0.75rem; padding:4px 10px; font-weight:700; background:linear-gradient(135deg, #0284c7, #0369a1); display:inline-flex; align-items:center; gap:4px; box-shadow:0 2px 8px rgba(2,132,199,0.3);">
+                          <span>🧾 Convert to Invoice</span>
+                        </button>
+                      `}
                     </td>
                   </tr>
                 `).join('')}
@@ -844,10 +850,16 @@ async function renderDashboardView(container) {
 
     document.querySelectorAll('.btn-convert-to-invoice')?.forEach(btn => {
       btn.addEventListener('click', () => {
-        navigateTo('sales');
-        setTimeout(() => {
-          document.querySelector('.sales-tab-btn[data-tab="orders"]')?.click();
-        }, 100);
+        const orderId = Number(btn.dataset.orderId);
+        const order = fieldOrders.find(o => o.id === orderId);
+        if (order) {
+          openCreateInvoiceModal(order);
+        } else {
+          navigateTo('sales');
+          setTimeout(() => {
+            document.querySelector('.sales-tab-btn[data-tab="orders"]')?.click();
+          }, 100);
+        }
       });
     });
 

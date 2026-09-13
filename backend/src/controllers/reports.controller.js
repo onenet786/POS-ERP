@@ -125,7 +125,27 @@ export async function getDashboardKPIs(req, res) {
             so.geo_latitude,
             so.geo_longitude,
             so.notes,
-            so.created_at
+            so.created_at,
+            COALESCE(
+              (
+                SELECT json_agg(
+                  json_build_object(
+                    'id', soi.id,
+                    'product_id', soi.product_id,
+                    'name', COALESCE(p.name, 'Product Item'),
+                    'quantity', soi.quantity,
+                    'unit_price', soi.unit_price,
+                    'tax_rate', soi.tax_rate,
+                    'tax_amount', soi.tax_amount,
+                    'total_price', soi.total_price
+                  )
+                )
+                FROM sales_order_items soi
+                LEFT JOIN products p ON soi.product_id = p.id
+                WHERE soi.sales_order_id = so.id
+              ),
+              '[]'::json
+            ) as items
           FROM sales_orders so
           LEFT JOIN customers c ON so.customer_id = c.id
           LEFT JOIN users u ON so.salesperson_id = u.id

@@ -108,8 +108,12 @@ async function renderOrdersTab() {
 
     container.innerHTML = `
       <div class="glass-panel">
-        <div class="panel-header">
-          <h3 class="panel-title">Sales Orders (Field Booker & Web)</h3>
+        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h3 class="panel-title">Sales Orders (Field Booker & Web)</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:3px 0 0 0;">Convert booked field orders directly into official Tax E-Invoices with 1-click</p>
+          </div>
+          <span class="tag tag-info">${orders.length} Total Orders</span>
         </div>
         <div class="data-table-container">
           <table class="data-table">
@@ -119,9 +123,11 @@ async function renderOrdersTab() {
                 <th>Order Date</th>
                 <th>Customer</th>
                 <th>Booked By</th>
+                <th>Items Booked</th>
                 <th>Total Amount</th>
                 <th>Geo Location</th>
                 <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -131,11 +137,33 @@ async function renderOrdersTab() {
                   <td>${o.order_date}</td>
                   <td style="font-weight:600; color:#ffffff;">${o.customer_name}</td>
                   <td>${o.salesperson_name}</td>
-                  <td style="font-weight:700;">${formatCurrency(o.total_amount)}</td>
                   <td>
-                    ${o.geo_latitude ? `<span class="tag tag-info">📍 ${Number(o.geo_latitude).toFixed(4)}, ${Number(o.geo_longitude).toFixed(4)}</span>` : '<span style="color:var(--text-muted);">Web Order</span>'}
+                    ${o.items && o.items.length > 0 ? `
+                      <span title="${o.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}" style="cursor:help; border-bottom:1px dashed rgba(255,255,255,0.3); font-size:0.82rem;">
+                        📦 ${o.items.length} item(s) (${o.items.reduce((s, i) => s + Number(i.quantity), 0)} pcs)
+                      </span>
+                    ` : '<span style="color:var(--text-muted); font-size:0.8rem;">General items</span>'}
                   </td>
-                  <td><span class="tag tag-success">${o.status}</span></td>
+                  <td style="font-weight:700; color:#34d399;">${formatCurrency(o.total_amount)}</td>
+                  <td>
+                    ${o.geo_latitude ? `<a href="https://www.google.com/maps?q=${o.geo_latitude},${o.geo_longitude}" target="_blank" rel="noopener noreferrer" class="tag tag-info" style="text-decoration:none; font-size:0.75rem;">📍 ${Number(o.geo_latitude).toFixed(4)}°, ${Number(o.geo_longitude).toFixed(4)}°</a>` : '<span style="color:var(--text-muted); font-size:0.75rem;">Web Order</span>'}
+                  </td>
+                  <td>
+                    <span class="tag ${o.status === 'INVOICED' ? 'tag-success' : (o.status === 'CONFIRMED' ? 'tag-info' : 'tag-warning')}" style="font-weight:700;">
+                      ${o.status === 'INVOICED' ? '✓ Invoiced' : o.status}
+                    </span>
+                  </td>
+                  <td>
+                    ${o.status === 'INVOICED' ? `
+                      <span style="font-size:0.75rem; color:#34d399; font-weight:700; background:rgba(52,211,153,0.12); padding:3px 8px; border-radius:4px; border:1px solid rgba(52,211,153,0.25); display:inline-flex; align-items:center; gap:4px;">
+                        ✓ Invoiced
+                      </span>
+                    ` : `
+                      <button class="btn btn-primary btn-sm btn-convert-order-inv" data-order-id="${o.id}" style="font-size:0.78rem; padding:4px 10px; font-weight:700; background:linear-gradient(135deg, #0284c7, #0369a1); display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(2,132,199,0.35);">
+                        <span>🧾 Convert to Invoice</span>
+                      </button>
+                    `}
+                  </td>
                 </tr>
               `).join('')}
             </tbody>
@@ -143,6 +171,16 @@ async function renderOrdersTab() {
         </div>
       </div>
     `;
+
+    container.querySelectorAll('.btn-convert-order-inv').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const orderId = Number(btn.dataset.orderId);
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+          openCreateInvoiceModal(order);
+        }
+      });
+    });
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -297,7 +335,7 @@ function openInvoiceModal(inv) {
 }
 
 
-async function openCreateInvoiceModal() {
+export async function openCreateInvoiceModal(order = null) {
   const existing = document.getElementById('create-inv-modal');
   if (existing) existing.remove();
 
@@ -322,26 +360,42 @@ async function openCreateInvoiceModal() {
 
   const defaultProd = AppState.products[0] || { id: 1, name: 'Standard Product', selling_price: 100, tax_rate: 18 };
 
-  // Multi-line items state
-  let invoiceItems = [
-    {
-      product_id: defaultProd.id,
-      quantity: 1,
-      unit_price: Number(defaultProd.selling_price) || 100,
-      tax_rate: Number(defaultProd.tax_rate) || 18
-    }
-  ];
+  // Multi-line items state: prefill from booked order if provided!
+  let invoiceItems = [];
+  if (order && order.items && order.items.length > 0) {
+    invoiceItems = order.items.map(item => ({
+      product_id: Number(item.product_id),
+      quantity: Number(item.quantity) || 1,
+      unit_price: Number(item.unit_price) || 0,
+      tax_rate: Number(item.tax_rate) !== undefined ? Number(item.tax_rate) : 18
+    }));
+  } else {
+    invoiceItems = [
+      {
+        product_id: defaultProd.id,
+        quantity: 1,
+        unit_price: Number(defaultProd.selling_price) || 100,
+        tax_rate: Number(defaultProd.tax_rate) || 18
+      }
+    ];
+  }
+
+  const selectedCustomerId = order ? Number(order.customer_id) : (AppState.customers[0]?.id || 2);
 
   const modalHtml = `
     <div class="modal-overlay" id="create-inv-modal" style="backdrop-filter: blur(8px); z-index:9999;">
       <div class="modal-content" style="max-width: 960px; width: 95%; max-height: 90vh; display:flex; flex-direction:column; padding: 1.75rem; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border-bright); box-shadow: 0 25px 60px -15px rgba(0,0,0,0.8);">
         <div class="modal-header" style="padding-bottom:1rem; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:flex-start;">
           <div>
-            <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.12); color:#38bdf8; padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:700; margin-bottom:4px;">
-              🧾 MULTI-PRODUCT E-INVOICE BUILDER
+            <div style="display:inline-flex; align-items:center; gap:6px; background:${order ? 'rgba(16,185,129,0.15)' : 'rgba(56,189,248,0.12)'}; color:${order ? '#34d399' : '#38bdf8'}; padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:700; margin-bottom:4px;">
+              ${order ? `⚡ CONVERTING BOOKED ORDER #${order.order_number}` : '🧾 MULTI-PRODUCT E-INVOICE BUILDER'}
             </div>
-            <h3 class="modal-title" style="font-size:1.35rem; font-weight:800; margin:0;">Generate New Tax E-Invoice</h3>
-            <p style="font-size:0.8rem; color:var(--text-muted); margin:3px 0 0 0;">Add multiple items, calculate tax rates, and post automated double-entry ledger entries.</p>
+            <h3 class="modal-title" style="font-size:1.35rem; font-weight:800; margin:0;">
+              ${order ? `Convert Order ${order.order_number} to Tax Invoice` : 'Generate New Tax E-Invoice'}
+            </h3>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:3px 0 0 0;">
+              ${order ? `Pre-filled from field order booked by ${order.salesperson_name || 'Booker'} for ${order.customer_name}. Review terms and post to ledger.` : 'Add multiple items, calculate tax rates, and post automated double-entry ledger entries.'}
+            </p>
           </div>
           <button class="btn-icon btn-sm" id="btn-close-create-inv" style="border:none; cursor:pointer;">✕</button>
         </div>
@@ -353,7 +407,7 @@ async function openCreateInvoiceModal() {
               <label class="form-label" style="font-weight:700; font-size:0.82rem;">Select Customer / Client:</label>
               <select id="new-inv-cust" class="form-control" style="font-size:0.9rem;">
                 ${AppState.customers.map(c => `
-                  <option value="${c.id}">${c.business_name || c.name} (Balance: ${formatCurrency(c.current_balance || 0)})</option>
+                  <option value="${c.id}" ${c.id === selectedCustomerId ? 'selected' : ''}>${c.business_name || c.name} (Balance: ${formatCurrency(c.current_balance || 0)})</option>
                 `).join('')}
               </select>
             </div>
@@ -412,12 +466,12 @@ async function openCreateInvoiceModal() {
             <div>
               <div class="form-group" style="margin-bottom:0.85rem;">
                 <label class="form-label" style="font-size:0.8rem; font-weight:600;">Invoice Notes / Delivery Terms:</label>
-                <textarea id="new-inv-notes" class="form-control" rows="2" placeholder="e.g. Standard 30-day payment term. Goods received in sound condition." style="font-size:0.85rem;"></textarea>
+                <textarea id="new-inv-notes" class="form-control" rows="2" placeholder="e.g. Standard 30-day payment term. Goods received in sound condition." style="font-size:0.85rem;">${order ? `Converted from Booked Order #${order.order_number}${order.salesperson_name ? ` (Booked by ${order.salesperson_name})` : ''}` : ''}</textarea>
               </div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
                 <div class="form-group" style="margin:0;">
                   <label class="form-label" style="font-size:0.8rem; font-weight:600;">Overall Discount (Rs):</label>
-                  <input type="number" id="new-inv-discount" class="form-control" value="0" min="0" style="font-size:0.9rem;" />
+                  <input type="number" id="new-inv-discount" class="form-control" value="${order ? (Number(order.discount_amount) || 0) : 0}" min="0" style="font-size:0.9rem;" />
                 </div>
                 <div class="form-group" style="margin:0;">
                   <label class="form-label" style="font-size:0.8rem; font-weight:600;">Amount Received / Paid (Rs):</label>
@@ -677,6 +731,7 @@ async function openCreateInvoiceModal() {
 
     try {
       const res = await Api.post('/sales/invoices', {
+        order_id: order ? order.id : null,
         customer_id: custId,
         items: invoiceItems.map(i => ({
           product_id: Number(i.product_id),
@@ -690,9 +745,21 @@ async function openCreateInvoiceModal() {
       });
 
       if (res.success) {
-        showToast(`Invoice ${res.invoice.invoice_number} created with QR Code!`, 'success');
+        if (order) {
+          showToast(`Order #${order.order_number} converted into Tax Invoice #${res.invoice.invoice_number}!`, 'success');
+        } else {
+          showToast(`Invoice ${res.invoice.invoice_number} created with QR Code!`, 'success');
+        }
         modal.remove();
-        await renderInvoicesTab();
+        
+        // Refresh whichever tab is active
+        const activeTab = document.querySelector('.sales-tab-btn.active')?.dataset.tab;
+        if (activeTab === 'orders') {
+          await renderOrdersTab();
+        } else {
+          await renderInvoicesTab();
+        }
+
         // Open the generated e-invoice modal with all products and QR code
         openInvoiceModal(res.invoice);
       }
