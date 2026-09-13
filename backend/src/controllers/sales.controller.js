@@ -291,6 +291,8 @@ export async function updateBookerLocation(req, res) {
     const cleanAddress = finalHumanLocation || 'Live Field Route';
 
     if (existing) {
+      if (bookerName) existing.booker_name = bookerName;
+      if (phone) existing.phone = phone;
       existing.latitude = Number(latitude);
       existing.longitude = Number(longitude);
       existing.human_location = finalHumanLocation;
@@ -333,13 +335,13 @@ export async function updateBookerLocation(req, res) {
             `UPDATE booker_locations 
              SET latitude = $1, longitude = $2, accuracy = $3, battery_level = $4, 
                  speed = $5, status = $6, current_shop_id = $7, current_shop_name = $8, 
-                 address = $9, human_location = $10, updated_at = CURRENT_TIMESTAMP
-             WHERE user_id = $11`,
+                 address = $9, human_location = $10, booker_name = $11, phone = $12, updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = $13`,
             [
               Number(latitude), Number(longitude), Number(accuracy || 10),
               Number(battery_level || 88), Number(speed || 0), status || 'CHECKED_IN',
               shop_id ? Number(shop_id) : null, shop_name || null,
-              cleanAddress, finalHumanLocation, userId
+              cleanAddress, finalHumanLocation, bookerName, phone, userId
             ]
           );
         } else {

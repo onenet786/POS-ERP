@@ -66,6 +66,8 @@ export async function login(req, res) {
         username: user.username,
         full_name: user.full_name,
         email: user.email,
+        phone: user.phone || '',
+        role_id: Number(user.role_id) || 3,
         role_name: user.role_name || 'Cashier',
         assigned_companies: assignedCompanies
       }

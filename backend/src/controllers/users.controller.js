@@ -58,9 +58,21 @@ export async function createUser(req, res) {
         }
       }
 
+      if (roleId === 4 || (role_name && role_name.toLowerCase().includes('booker'))) {
+        await query(
+          `INSERT INTO booker_locations 
+           (user_id, booker_name, phone, latitude, longitude, accuracy, battery_level, speed, status, address, human_location, created_at, updated_at)
+           VALUES ($1, $2, $3, 31.4187, 73.0791, 10, 95, 0, 'ACTIVE', 'Locating live field position...', 'Locating live field position...', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+           ON CONFLICT (user_id) DO NOTHING`,
+          [newUser.id, newUser.full_name, phone || '+92 300 0000000']
+        ).catch(() => {});
+      }
+
       return res.status(201).json({ success: true, user: newUser, message: 'User created successfully' });
     }
 
+    const isBooker = (role_name || '').toLowerCase().includes('booker');
+    const roleId = isBooker ? 4 : (role_name === 'Super Admin' ? 1 : (role_name === 'Store Manager' ? 2 : 3));
     const newId = store.users.length + 1;
     const newUser = {
       id: newId,
@@ -69,12 +81,32 @@ export async function createUser(req, res) {
       password_hash: hash,
       full_name,
       phone: phone || '',
-      role_id: 3,
+      role_id: roleId,
       role_name: role_name || 'Cashier',
       is_active: true
     };
     store.users.push(newUser);
     store.user_company_access.push({ user_id: newId, company_ids: company_ids || [1] });
+
+    if (isBooker) {
+      if (!store.booker_locations) store.booker_locations = [];
+      store.booker_locations.push({
+        id: store.booker_locations.length + 1,
+        user_id: newId,
+        booker_name: full_name,
+        phone: phone || '+92 300 0000000',
+        latitude: 31.4187,
+        longitude: 73.0791,
+        accuracy: 10,
+        battery_level: 95,
+        speed: 0,
+        status: 'ACTIVE',
+        address: 'Locating live field position...',
+        human_location: 'Locating live field position...',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
 
     res.status(201).json({ success: true, user: newUser, message: 'User created successfully' });
   } catch (err) {

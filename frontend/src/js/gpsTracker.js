@@ -13,8 +13,11 @@ let _lastSentCoords = { lat: 0, lng: 0, time: 0 };
  */
 export async function trackBookerLocation(options = { showNotification: false, isManual: false }) {
   const currentUser = AppState.currentUser;
-  const isBooker = currentUser?.role_id === 4 || (currentUser?.role_name || '').toLowerCase().includes('booker');
-  if (!isBooker && !options.force) return;
+  const roleId = Number(currentUser?.role_id || 0);
+  const roleName = String(currentUser?.role_name || '').toLowerCase();
+  const username = String(currentUser?.username || '').toLowerCase();
+  const isBooker = roleId === 4 || roleName.includes('booker') || username.includes('booker') || Boolean(options.force);
+  if (!isBooker) return;
 
   const updateStatusText = (html, color = '#38bdf8') => {
     const el = document.getElementById('gps-status-text');
@@ -219,7 +222,10 @@ async function fallbackIpGeolocation(pushLocation, updateStatusText) {
 export function startContinuousTracking() {
   if (_activeWatchId !== null || !('geolocation' in navigator)) return;
 
-  const isBooker = AppState.currentUser?.role_id === 4 || (AppState.currentUser?.role_name || '').toLowerCase().includes('booker');
+  const roleId = Number(AppState.currentUser?.role_id || 0);
+  const roleName = String(AppState.currentUser?.role_name || '').toLowerCase();
+  const username = String(AppState.currentUser?.username || '').toLowerCase();
+  const isBooker = roleId === 4 || roleName.includes('booker') || username.includes('booker');
   if (!isBooker) return;
 
   _activeWatchId = navigator.geolocation.watchPosition(
