@@ -94,7 +94,7 @@ node database/migrate.js
 # 6. Build Frontend Assets
 echo "[*] Building frontend production bundle..."
 cd "${BASE_DIR}/frontend"
-npm install
+npm install --include=dev
 npm run build
 
 # 7. Start/Reload via PM2

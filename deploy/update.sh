@@ -25,7 +25,7 @@ pm2 reload ecosystem.config.cjs || pm2 start ecosystem.config.cjs --env producti
 # 3. Rebuild Frontend bundle
 echo "[*] Rebuilding frontend assets..."
 cd ../frontend
-npm install
+npm install --include=dev
 npm run build
 
 echo "=================================================================="
