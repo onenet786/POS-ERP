@@ -1,5 +1,58 @@
 const geocodeCache = new Map();
 
+export function normalizeAddress(a, displayName = '') {
+  if (!a) {
+    if (!displayName) return 'Field Location Identified';
+    let clean = displayName
+      .replace(/Al-Rehman Garden Phase-7/gi, 'Al Rehman Garden')
+      .replace(/Al-Rehman/gi, 'Al Rehman');
+    return clean.split(',').slice(0, 4).join(', ').trim();
+  }
+
+  // 1. House number / Building
+  const houseNumber = a.house_number || a.street_number || '';
+
+  // 2. Road / Street
+  let road = a.road || '';
+  if (road.toLowerCase().includes('unnamed')) road = '';
+
+  // 3. Society / Neighborhood / Suburb
+  let neighborhood = a.residential || a.suburb || a.neighbourhood || a.quarter || '';
+  neighborhood = neighborhood.replace(/Al-Rehman/gi, 'Al Rehman');
+  if (neighborhood.includes('Al Rehman Garden')) {
+    neighborhood = 'Al Rehman Garden';
+  }
+
+  // 4. Town / Locality (omit redundant tehsil if major society is already identified)
+  let town = a.town || a.village || '';
+  if (neighborhood && (neighborhood.includes('Garden') || neighborhood.includes('Town') || neighborhood.includes('DHA') || neighborhood.includes('Gulberg') || neighborhood.includes('Model'))) {
+    town = '';
+  }
+
+  // 5. Metropolitan City / District
+  let city = a.city || '';
+  if (!city && a.county) city = a.county.replace(/\s+(District|Division)/gi, '').trim();
+  if (!city && a.city_district) city = a.city_district.replace(/\s+District/gi, '').trim();
+  if (!city && a.municipality) city = a.municipality.replace(/\s+Tehsil/gi, '').trim();
+
+  // 6. Province / State
+  const state = a.state || '';
+
+  // 7. Country
+  const country = a.country || '';
+
+  const parts = [];
+  if (houseNumber) parts.push(houseNumber);
+  if (road && !parts.includes(road) && road !== neighborhood) parts.push(road);
+  if (neighborhood && !parts.includes(neighborhood)) parts.push(neighborhood);
+  if (town && !parts.includes(town) && town !== city) parts.push(town);
+  if (city && !parts.includes(city)) parts.push(city);
+  if (state && !parts.includes(state)) parts.push(state);
+  if (country && !parts.includes(country)) parts.push(country);
+
+  return parts.filter(Boolean).join(', ');
+}
+
 export async function reverseGeocodeCoordinates(lat, lng) {
   if (!lat || !lng) return 'Field Location Identified';
   const numLat = Number(lat);
@@ -12,11 +65,11 @@ export async function reverseGeocodeCoordinates(lat, lng) {
     return geocodeCache.get(cacheKey);
   }
 
-  // 1. OpenStreetMap Nominatim
+  // 1. OpenStreetMap Nominatim with Address Details
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4500);
-    const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${numLat}&lon=${numLng}&format=json&accept-language=en`;
+    const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${numLat}&lon=${numLng}&format=json&accept-language=en&addressdetails=1`;
     const res = await fetch(nomUrl, {
       headers: { 'User-Agent': 'BinIshaqSoftsERP/2.0 (info@binishaqsoft.com)' },
       signal: controller.signal
@@ -24,52 +77,14 @@ export async function reverseGeocodeCoordinates(lat, lng) {
     clearTimeout(timeoutId);
     if (res.ok) {
       const data = await res.json();
-      if (data && data.address) {
-        const a = data.address;
-
-        // Extract road if valid
-        const road = a.road || '';
-
-        // Extract true local area (neighborhood, suburb, town, village)
-        let local = a.town || a.suburb || a.neighbourhood || a.village || a.quarter || '';
-
-        // Check for erroneous OSM residential society tags (e.g., Al-Rehman Garden Phase-7 falsely tagged in Batapur)
-        let society = a.residential || '';
-        if (society.includes('Al-Rehman Garden') && (local.includes('Batapur') || a.postcode === '53400' || (numLat > 31.55 && numLng > 74.45))) {
-          society = ''; // Filter out false tag
-        }
-
-        // Clean City / District
-        const city = a.city || a.city_district?.replace(' District', '') || a.county?.replace(' District', '') || a.municipality?.replace(' Tehsil', '') || '';
-        const state = a.state || '';
-        const country = a.country || '';
-
-        const parts = [];
-        if (road && road !== local && !road.toLowerCase().includes('unnamed')) parts.push(road);
-        if (society) parts.push(society);
-        if (local && !parts.includes(local)) parts.push(local);
-        if (city && !parts.includes(city)) parts.push(city);
-        if (state && !parts.includes(state)) parts.push(state);
-        if (country && !parts.includes(country)) parts.push(country);
-
-        const result = parts.filter(Boolean).join(', ');
-        if (result.length > 0) {
-          geocodeCache.set(cacheKey, result);
-          return result;
-        }
-      }
-      if (data.display_name) {
-        let cleaned = data.display_name;
-        if (cleaned.includes('Al-Rehman Garden Phase-7') && cleaned.includes('Batapur')) {
-          cleaned = cleaned.replace('Al-Rehman Garden Phase-7, ', '');
-        }
-        const result = cleaned.split(',').slice(0, 4).join(', ').trim();
-        geocodeCache.set(cacheKey, result);
-        return result;
+      const normalized = normalizeAddress(data.address, data.display_name);
+      if (normalized && normalized !== 'Field Location Identified') {
+        geocodeCache.set(cacheKey, normalized);
+        return normalized;
       }
     }
   } catch (err) {
-    // Fall through to fallback provider
+    // Fall through to secondary provider
   }
 
   // 2. BigDataCloud API

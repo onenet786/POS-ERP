@@ -495,9 +495,10 @@ async function renderDashboardView(container) {
                 <div style="font-size:0.95rem; font-weight:700; color:#ffffff; line-height:1.4;">
                   ${(() => {
                     let loc = b.human_location || b.address || '';
-                    if (loc.includes('Al-Rehman Garden') && (loc.includes('Batapur') || Number(b.latitude) > 31.55)) {
-                      loc = loc.replace('Al-Rehman Garden Phase-7, ', '').replace('Al-Rehman Garden, ', '');
-                    }
+                    loc = loc
+                      .replace(/Al-Rehman Garden Phase-7/gi, 'Al Rehman Garden')
+                      .replace(/Al-Rehman/gi, 'Al Rehman')
+                      .replace(/Batapur, /gi, '');
                     if (loc.startsWith('Store Counter')) return 'Field Location Identified';
                     return loc || 'Field Location Identified';
                   })()}

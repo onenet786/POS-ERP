@@ -1,4 +1,4 @@
-const CACHE_NAME = 'binishaq-suite-v7';
+const CACHE_NAME = 'binishaq-suite-v8';
 const ASSETS_TO_CACHE = [
 
   '/manifest.json'

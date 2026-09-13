@@ -91,6 +91,50 @@ export function renderMobileBookerView(container) {
   attachMobileEvents();
 }
 
+export function normalizeAddressClient(a, displayName = '') {
+  if (!a) {
+    if (!displayName) return 'Customer Field Route (Verified)';
+    let clean = displayName
+      .replace(/Al-Rehman Garden Phase-7/gi, 'Al Rehman Garden')
+      .replace(/Al-Rehman/gi, 'Al Rehman');
+    return clean.split(',').slice(0, 4).join(', ').trim();
+  }
+
+  const houseNumber = a.house_number || a.street_number || '';
+  let road = a.road || '';
+  if (road.toLowerCase().includes('unnamed')) road = '';
+
+  let neighborhood = a.residential || a.suburb || a.neighbourhood || a.quarter || '';
+  neighborhood = neighborhood.replace(/Al-Rehman/gi, 'Al Rehman');
+  if (neighborhood.includes('Al Rehman Garden')) {
+    neighborhood = 'Al Rehman Garden';
+  }
+
+  let town = a.town || a.village || '';
+  if (neighborhood && (neighborhood.includes('Garden') || neighborhood.includes('Town') || neighborhood.includes('DHA') || neighborhood.includes('Gulberg') || neighborhood.includes('Model'))) {
+    town = '';
+  }
+
+  let city = a.city || '';
+  if (!city && a.county) city = a.county.replace(/\s+(District|Division)/gi, '').trim();
+  if (!city && a.city_district) city = a.city_district.replace(/\s+District/gi, '').trim();
+  if (!city && a.municipality) city = a.municipality.replace(/\s+Tehsil/gi, '').trim();
+
+  const state = a.state || '';
+  const country = a.country || '';
+
+  const parts = [];
+  if (houseNumber) parts.push(houseNumber);
+  if (road && !parts.includes(road) && road !== neighborhood) parts.push(road);
+  if (neighborhood && !parts.includes(neighborhood)) parts.push(neighborhood);
+  if (town && !parts.includes(town) && town !== city) parts.push(town);
+  if (city && !parts.includes(city)) parts.push(city);
+  if (state && !parts.includes(state)) parts.push(state);
+  if (country && !parts.includes(country)) parts.push(country);
+
+  return parts.filter(Boolean).join(', ');
+}
+
 export async function getHumanReadableLocation(lat, lng) {
   // 1. Try our own backend endpoint first (reliable, server-side caching & resolution)
   try {
@@ -102,42 +146,14 @@ export async function getHumanReadableLocation(lat, lng) {
     console.warn('[Reverse Geocode Backend Notice]', err);
   }
 
-  // 2. Direct Nominatim fallback with accurate administrative hierarchy
+  // 2. Direct Nominatim fallback with accurate administrative normalization
   try {
-    const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`;
+    const nomUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en&addressdetails=1`;
     const nomRes = await fetch(nomUrl, { headers: { 'User-Agent': 'BinIshaqERP/2.0' } });
     if (nomRes.ok) {
       const data = await nomRes.json();
-      if (data && data.address) {
-        const a = data.address;
-        const road = a.road || '';
-        let local = a.town || a.suburb || a.neighbourhood || a.village || a.quarter || '';
-        let society = a.residential || '';
-        if (society.includes('Al-Rehman Garden') && (local.includes('Batapur') || a.postcode === '53400' || (Number(lat) > 31.55 && Number(lng) > 74.45))) {
-          society = '';
-        }
-        const city = a.city || a.city_district?.replace(' District', '') || a.county?.replace(' District', '') || a.municipality?.replace(' Tehsil', '') || '';
-        const state = a.state || '';
-        const country = a.country || '';
-
-        const parts = [];
-        if (road && road !== local && !road.toLowerCase().includes('unnamed')) parts.push(road);
-        if (society) parts.push(society);
-        if (local && !parts.includes(local)) parts.push(local);
-        if (city && !parts.includes(city)) parts.push(city);
-        if (state && !parts.includes(state)) parts.push(state);
-        if (country && !parts.includes(country)) parts.push(country);
-
-        const result = parts.filter(Boolean).join(', ');
-        if (result.length > 0) return result;
-      }
-      if (data.display_name) {
-        let cleaned = data.display_name;
-        if (cleaned.includes('Al-Rehman Garden Phase-7') && cleaned.includes('Batapur')) {
-          cleaned = cleaned.replace('Al-Rehman Garden Phase-7, ', '');
-        }
-        return cleaned.split(',').slice(0, 4).join(', ').trim();
-      }
+      const normalized = normalizeAddressClient(data.address, data.display_name);
+      if (normalized) return normalized;
     }
   } catch (_) {}
 
@@ -161,6 +177,7 @@ export async function getHumanReadableLocation(lat, lng) {
   // Friendly non-coordinate fallback
   return 'Customer Field Route (Verified)';
 }
+
 
 
 function acquireGps(isManualCheckin = false) {
