@@ -251,6 +251,40 @@ const mockStore = {
     { user_id: 3, company_ids: [2] },
     { user_id: 4, company_ids: [1] }
   ],
+  booker_locations: [
+    {
+      id: 1,
+      user_id: 4,
+      booker_name: 'Hamza Khan (Field Booker)',
+      phone: '+92 300 9876543',
+      latitude: 24.8607,
+      longitude: 67.0011,
+      accuracy: 6.5,
+      battery_level: 88,
+      speed: 12.4,
+      status: 'CHECKED_IN',
+      current_shop_id: 2,
+      current_shop_name: 'Al-Madina Superstore',
+      address: 'Shop 14, Commercial Market, Main Blvd, Karachi',
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      user_id: 5,
+      booker_name: 'Tariq Mehmood (North Route Booker)',
+      phone: '+92 321 4455667',
+      latitude: 31.5204,
+      longitude: 74.3587,
+      accuracy: 8.0,
+      battery_level: 74,
+      speed: 26.8,
+      status: 'IN_TRANSIT',
+      current_shop_id: 1,
+      current_shop_name: 'Metro Cash & Carry Hub',
+      address: 'Near Liberty Roundabout, Gulberg III, Lahore',
+      updated_at: new Date(Date.now() - 4 * 60 * 1000).toISOString()
+    }
+  ],
   permissions_matrix: {
     'Super Admin': {
       pos: ['view', 'create', 'edit', 'delete', 'approve', 'export'],

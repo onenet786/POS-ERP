@@ -41,6 +41,9 @@ export async function getDashboardKPIs(req, res) {
       { day: 'Sun', pos: todayPosSales > 0 ? todayPosSales : 39500, wholesale: 15400 }
     ];
 
+    const bookerLocations = store.booker_locations || [];
+    const activeBookersCount = bookerLocations.filter(b => b.status !== 'OFFLINE').length;
+
     res.json({
       success: true,
       kpis: {
@@ -52,8 +55,10 @@ export async function getDashboardKPIs(req, res) {
         bank_balance: bankBalance,
         total_stock_value: 520000,
         low_stock_count: lowStockItems.length,
-        expiring_batches_count: expiringBatches.length
+        expiring_batches_count: expiringBatches.length,
+        active_bookers_count: activeBookersCount
       },
+      active_booker_locations: bookerLocations,
       low_stock_items: lowStockItems,
       expiring_batches: expiringBatches,
       sales_trend: salesTrend

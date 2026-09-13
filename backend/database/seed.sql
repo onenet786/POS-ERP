@@ -171,6 +171,12 @@ INSERT INTO employees (id, company_id, employee_code, full_name, department, des
 (4, 1, 'EMP-104', 'Bilal Tariq', 'Finance & Accounts', 'Senior Accountant', '35201-9988776-4', '+92 345 6677889', 'bilal.acc@onenet.local', 65000.00, 4000.00, 2500.00, 'ACTIVE', 'QR-EMP-104-BILAL')
 ON CONFLICT (id) DO NOTHING;
 
+-- 15. BOOKER LIVE LOCATIONS
+INSERT INTO booker_locations (id, user_id, booker_name, phone, latitude, longitude, accuracy, battery_level, speed, status, current_shop_id, current_shop_name, address, updated_at) VALUES
+(1, 4, 'Hamza Khan (Field Booker)', '+92 300 9876543', 24.8607, 67.0011, 10.5, 88, 12.4, 'CHECKED_IN', 1, 'Metro Cash & Carry Hub', 'Plot 54, Commercial Avenue, Phase 2, Karachi', CURRENT_TIMESTAMP),
+(2, 3, 'Tariq Mehmood (North Route Booker)', '+92 321 4455667', 31.5204, 74.3587, 8.2, 74, 26.8, 'IN_TRANSIT', 2, 'Al-Madina Superstore', 'Near Liberty Roundabout, Gulberg III, Lahore', CURRENT_TIMESTAMP)
+ON CONFLICT (id) DO NOTHING;
+
 -- Restart sequences to avoid primary key conflicts on future inserts
 SELECT setval(pg_get_serial_sequence('users', 'id'), coalesce(max(id), 1)) FROM users;
 SELECT setval(pg_get_serial_sequence('roles', 'id'), coalesce(max(id), 1)) FROM roles;
@@ -186,4 +192,6 @@ SELECT setval(pg_get_serial_sequence('pos_shifts', 'id'), coalesce(max(id), 1)) 
 SELECT setval(pg_get_serial_sequence('bom_recipes', 'id'), coalesce(max(id), 1)) FROM bom_recipes;
 SELECT setval(pg_get_serial_sequence('companies', 'id'), coalesce(max(id), 1)) FROM companies;
 SELECT setval(pg_get_serial_sequence('employees', 'id'), coalesce(max(id), 1)) FROM employees;
+SELECT setval(pg_get_serial_sequence('booker_locations', 'id'), coalesce(max(id), 1)) FROM booker_locations;
+
 

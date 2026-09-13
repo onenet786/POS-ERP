@@ -98,18 +98,55 @@ function acquireGps() {
         AppState.mobileCart.geoLat = pos.coords.latitude;
         AppState.mobileCart.geoLng = pos.coords.longitude;
         if (text) text.innerHTML = `📍 GPS Verified: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+        sendLiveLocationToServer(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 'CHECKED_IN');
       },
       () => {
         // Fallback default coordinates (Karachi Store Area)
         AppState.mobileCart.geoLat = 24.8607;
         AppState.mobileCart.geoLng = 67.0011;
         if (text) text.innerHTML = `📍 GPS Tagged: 24.8607° N, 67.0011° E (Store)`;
-      }
+        sendLiveLocationToServer(24.8607, 67.0011, 15, 'CHECKED_IN');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
     );
   } else {
     AppState.mobileCart.geoLat = 24.8607;
     AppState.mobileCart.geoLng = 67.0011;
     if (text) text.innerHTML = `📍 GPS Tagged: 24.8607° N, 67.0011° E`;
+    sendLiveLocationToServer(24.8607, 67.0011, 20, 'CHECKED_IN');
+  }
+}
+
+async function sendLiveLocationToServer(lat, lng, accuracy = 10, status = 'CHECKED_IN') {
+  try {
+    const custSelect = document.getElementById('mobile-cust-select');
+    const custId = custSelect ? custSelect.value : (AppState.customers[0]?.id || 1);
+    const cust = AppState.customers.find(c => c.id === Number(custId));
+    const shopName = cust ? (cust.business_name || cust.name) : 'Customer Shop';
+
+    let batteryLevel = 88;
+    if ('getBattery' in navigator) {
+      try {
+        const b = await navigator.getBattery();
+        batteryLevel = Math.round(b.level * 100);
+      } catch (e) {}
+    }
+
+    const payload = {
+      latitude: lat,
+      longitude: lng,
+      accuracy: Math.round(accuracy),
+      battery_level: batteryLevel,
+      speed: 0.0,
+      status: status,
+      shop_id: custId,
+      shop_name: shopName,
+      address: cust ? `${cust.address}, ${cust.city}` : 'Live Field Visit'
+    };
+
+    await Api.post('/sales/booker/location', payload);
+  } catch (err) {
+    console.warn('[GPS Sync] Notice:', err.message || err);
   }
 }
 
@@ -120,7 +157,14 @@ function attachMobileEvents() {
 
   document.getElementById('btn-refresh-gps')?.addEventListener('click', () => {
     acquireGps();
-    showToast('Shop visit GPS coordinates updated', 'success');
+    showToast('Shop visit GPS coordinates updated & synced to dashboard', 'success');
+  });
+
+  // Re-sync location with selected shop when customer changes
+  document.getElementById('mobile-cust-select')?.addEventListener('change', () => {
+    if (AppState.mobileCart.geoLat && AppState.mobileCart.geoLng) {
+      sendLiveLocationToServer(AppState.mobileCart.geoLat, AppState.mobileCart.geoLng, 10, 'CHECKED_IN');
+    }
   });
 
   document.querySelectorAll('.mobile-add-btn').forEach(btn => {

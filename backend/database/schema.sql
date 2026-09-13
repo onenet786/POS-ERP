@@ -512,6 +512,25 @@ CREATE TABLE IF NOT EXISTS payroll_runs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 15. FIELD ORDER BOOKERS & LIVE GPS LOCATION TRACKING
+CREATE TABLE IF NOT EXISTS booker_locations (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    booker_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(30),
+    latitude NUMERIC(10, 7) NOT NULL,
+    longitude NUMERIC(10, 7) NOT NULL,
+    accuracy NUMERIC(8, 2) DEFAULT 10.00,
+    battery_level INT DEFAULT 100,
+    speed NUMERIC(6, 2) DEFAULT 0.00,
+    status VARCHAR(30) DEFAULT 'ACTIVE', -- 'ACTIVE', 'CHECKED_IN', 'IN_TRANSIT', 'OFFLINE'
+    current_shop_id INT REFERENCES customers(id) ON DELETE SET NULL,
+    current_shop_name VARCHAR(150),
+    address TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- INDEXES FOR MAXIMUM QUERY PERFORMANCE
 CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
 CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
@@ -523,4 +542,7 @@ CREATE INDEX IF NOT EXISTS idx_pos_transactions_created ON pos_transactions(crea
 CREATE INDEX IF NOT EXISTS idx_sales_invoices_customer ON sales_invoices(customer_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_bills_vendor ON purchase_bills(vendor_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_emp_date ON attendance_logs(employee_id, log_date);
+CREATE INDEX IF NOT EXISTS idx_booker_locations_user ON booker_locations(user_id);
+CREATE INDEX IF NOT EXISTS idx_booker_locations_updated ON booker_locations(updated_at);
+
 

@@ -79,6 +79,11 @@ async function startWorkspace() {
         if (AppState.activeModule === 'dashboard') {
           renderDashboardView(document.getElementById('content-viewport'));
         }
+      } else if (data.type === 'BOOKER_LOCATION_UPDATE') {
+        showToast(`📍 Live GPS: ${data.payload.booker_name} updated location at ${data.payload.current_shop_name || 'Field'}`, 'info');
+        if (AppState.activeModule === 'dashboard') {
+          renderDashboardView(document.getElementById('content-viewport'));
+        }
       } else if (data.type === 'MANUFACTURING_COMPLETED') {
         showToast(`⚙️ Assembly Completed: ${data.payload.quantity} units of ${data.payload.product}`, 'success');
       }
@@ -235,15 +240,19 @@ function navigateTo(moduleName) {
 async function renderDashboardView(container) {
   try {
     const res = await Api.get('/reports/dashboard');
-    const { kpis, low_stock_items, expiring_batches, sales_trend } = res;
+    const { kpis, low_stock_items, expiring_batches, sales_trend, active_booker_locations } = res;
+    const bookers = active_booker_locations || [];
 
     container.innerHTML = `
       <div class="page-header">
         <div>
           <h1 class="page-title">Executive Command Center</h1>
-          <p class="page-subtitle">Unified metrics, revenue velocity, cash positions & inventory intelligence</p>
+          <p class="page-subtitle">Unified metrics, revenue velocity, cash positions, fleet tracking & inventory intelligence</p>
         </div>
         <div style="display:flex; gap:0.75rem;">
+          <button class="btn btn-outline" id="btn-dashboard-gps-track" style="display:inline-flex; align-items:center; gap:6px; color:#38bdf8; border-color:rgba(56,189,248,0.4);">
+            🛰️ Live Booker GPS
+          </button>
           <button class="btn btn-primary" id="btn-quick-pos-launch">
             ⚡ Open POS Register
           </button>
@@ -283,6 +292,17 @@ async function renderDashboardView(container) {
           </div>
           <div class="kpi-value">${formatCurrency(kpis.total_receivables)}</div>
           <div class="kpi-footer warning">Across 4 active B2B customer accounts</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Field Bookers Online</span>
+            <div class="kpi-icon-wrapper" style="background:rgba(56,189,248,0.12); color:#38bdf8;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+            </div>
+          </div>
+          <div class="kpi-value" style="color:#38bdf8;">${kpis.active_bookers_count || bookers.length} Active</div>
+          <div class="kpi-footer positive">🟢 Real-time GPS tracking active</div>
         </div>
 
         <div class="kpi-card">
@@ -340,6 +360,96 @@ async function renderDashboardView(container) {
               <span class="tag tag-info">Weighted Avg</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- LIVE FIELD ORDER BOOKERS & GPS FLEET TRACKING SECTION -->
+      <div class="glass-panel" id="section-booker-fleet-tracking" style="margin-bottom: 1.75rem; border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(8, 12, 20, 0.95));">
+        <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.35rem;">🛰️</span>
+              <h3 class="panel-title" style="margin:0; font-size:1.2rem; font-weight:800; letter-spacing:-0.02em;">Live Field Order Bookers & GPS Fleet Tracking</h3>
+              <span class="tag tag-success" style="display:inline-flex; align-items:center; gap:5px; font-weight:700;">
+                <span class="status-dot-pulse" style="width:7px; height:7px;"></span>
+                <span>${bookers.length} Active in Field</span>
+              </span>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin:4px 0 0 0;">
+              Real-time salesperson GPS coordinates, geo-fenced shop check-ins, battery levels & route map
+            </p>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button class="btn btn-outline btn-sm" id="btn-refresh-booker-gps" style="color:#38bdf8; border-color:rgba(56,189,248,0.4);">
+              🔄 Refresh GPS
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-open-booker-app-dash" style="background:linear-gradient(135deg, #0284c7, #0369a1); font-weight:700;">
+              📱 Order Booker PWA
+            </button>
+          </div>
+        </div>
+
+        <!-- BOOKERS LIVE CARDS GRID -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:1.25rem; margin-top:1.25rem;" id="dashboard-bookers-grid">
+          ${bookers.map(b => `
+            <div class="booker-live-card" style="background: rgba(17, 24, 39, 0.75); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 1.25rem; display:flex; flex-direction:column; gap:0.85rem; position:relative; overflow:hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+              
+              <!-- Header with Avatar and Status -->
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, #0ea5e9, #6366f1); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:1.05rem; box-shadow:0 0 15px rgba(14,165,233,0.4); border: 2px solid rgba(255,255,255,0.2);">
+                    ${b.booker_name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 style="font-size:0.98rem; font-weight:700; color:#fff; margin:0;">${b.booker_name}</h4>
+                    <span style="font-size:0.75rem; color:#38bdf8; font-family:var(--font-mono);">${b.phone || '+92 300 9876543'}</span>
+                  </div>
+                </div>
+                <span class="tag ${b.status === 'CHECKED_IN' ? 'tag-success' : (b.status === 'IN_TRANSIT' ? 'tag-info' : 'tag-warning')}" style="font-weight:700;">
+                  ${b.status === 'CHECKED_IN' ? '📍 Checked-in at Shop' : (b.status === 'IN_TRANSIT' ? `🚗 In Transit (${b.speed || 15} km/h)` : '⏸️ Active')}
+                </span>
+              </div>
+
+              <!-- Shop Visited / Location Info -->
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:0.75rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="font-size:0.72rem; text-transform:uppercase; color:var(--text-muted); font-weight:700;">Target Shop / Check-in:</span>
+                  <span style="font-size:0.78rem; color:#34d399; font-weight:700;">🏪 ${b.current_shop_name || 'Retail Market'}</span>
+                </div>
+                <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.35;">
+                  ${b.address || 'Commercial Field Route'}
+                </div>
+              </div>
+
+              <!-- GPS Coordinates & Telemetry -->
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; font-size:0.78rem;">
+                <div style="background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05);">
+                  <span style="color:var(--text-muted); font-size:0.7rem; display:block; font-weight:600;">GPS Coordinates:</span>
+                  <span style="font-family:var(--font-mono); font-weight:700; color:#38bdf8;">
+                    ${Number(b.latitude).toFixed(4)}°, ${Number(b.longitude).toFixed(4)}°
+                  </span>
+                </div>
+                <div style="background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:space-between;">
+                  <div>
+                    <span style="color:var(--text-muted); font-size:0.7rem; display:block; font-weight:600;">Battery:</span>
+                    <span style="font-weight:700; color:${b.battery_level > 20 ? '#34d399' : '#f87171'};">🔋 ${b.battery_level}%</span>
+                  </div>
+                  <div style="text-align:right;">
+                    <span style="color:var(--text-muted); font-size:0.7rem; display:block; font-weight:600;">Accuracy:</span>
+                    <span style="font-weight:600; color:#94a3b8;">±${b.accuracy || 10}m</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions: Google Maps & Open Route -->
+              <div style="display:flex; gap:8px; margin-top:2px;">
+                <a href="https://www.google.com/maps?q=${b.latitude},${b.longitude}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; text-decoration:none; color:#38bdf8; border-color:rgba(56,189,248,0.3); font-size:0.8rem; font-weight:600;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  <span>View on Google Maps</span>
+                </a>
+              </div>
+            </div>
+          `).join('')}
         </div>
       </div>
 
@@ -405,6 +515,16 @@ async function renderDashboardView(container) {
 
     document.getElementById('btn-quick-pos-launch')?.addEventListener('click', () => {
       navigateTo('pos');
+    });
+
+    document.getElementById('btn-refresh-booker-gps')?.addEventListener('click', async () => {
+      showToast('Refreshing field booker GPS telemetries...', 'info');
+      await renderDashboardView(container);
+      showToast('Field booker GPS locations updated', 'success');
+    });
+
+    document.getElementById('btn-open-booker-app-dash')?.addEventListener('click', () => {
+      navigateTo('mobile_booker');
     });
 
     // Render Chart.js

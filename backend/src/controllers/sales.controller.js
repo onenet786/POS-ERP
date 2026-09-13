@@ -213,3 +213,91 @@ export async function getCustomers(req, res) {
     res.status(500).json({ success: false, message: err.message });
   }
 }
+
+export async function getBookerLocations(req, res) {
+  try {
+    const store = getMockStore();
+    res.json({
+      success: true,
+      locations: store.booker_locations || []
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+export async function updateBookerLocation(req, res) {
+  try {
+    const {
+      latitude,
+      longitude,
+      accuracy,
+      battery_level,
+      speed,
+      status,
+      shop_id,
+      shop_name,
+      address
+    } = req.body;
+
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ success: false, message: 'Latitude and longitude are required' });
+    }
+
+    const store = getMockStore();
+    const userId = req.user?.id || 4;
+    const bookerName = req.user?.full_name || 'Hamza Khan (Field Booker)';
+    const phone = req.user?.phone || '+92 300 9876543';
+
+    if (!store.booker_locations) {
+      store.booker_locations = [];
+    }
+
+    let existing = store.booker_locations.find(b => b.user_id === userId);
+    const now = new Date().toISOString();
+
+    if (existing) {
+      existing.latitude = Number(latitude);
+      existing.longitude = Number(longitude);
+      if (accuracy !== undefined) existing.accuracy = Number(accuracy);
+      if (battery_level !== undefined) existing.battery_level = Number(battery_level);
+      if (speed !== undefined) existing.speed = Number(speed);
+      if (status) existing.status = status;
+      if (shop_id) existing.current_shop_id = Number(shop_id);
+      if (shop_name) existing.current_shop_name = shop_name;
+      if (address) existing.address = address;
+      existing.updated_at = now;
+    } else {
+      existing = {
+        id: store.booker_locations.length + 1,
+        user_id: userId,
+        booker_name: bookerName,
+        phone,
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        accuracy: Number(accuracy || 10.0),
+        battery_level: Number(battery_level || 90),
+        speed: Number(speed || 0.0),
+        status: status || 'CHECKED_IN',
+        current_shop_id: shop_id ? Number(shop_id) : 2,
+        current_shop_name: shop_name || 'Al-Madina Superstore',
+        address: address || 'Current Field Location',
+        created_at: now,
+        updated_at: now
+      };
+      store.booker_locations.push(existing);
+    }
+
+    // Broadcast live event to connected dashboards via WebSocket
+    broadcastEvent('BOOKER_LOCATION_UPDATE', existing);
+
+    res.json({
+      success: true,
+      message: 'Booker live location saved successfully',
+      location: existing
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+

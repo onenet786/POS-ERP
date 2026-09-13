@@ -17,10 +17,11 @@ cd "$(dirname "$0")/.."
 git checkout -- frontend/package-lock.json 2>/dev/null || true
 git pull origin main
 
-# 2. Update Backend dependencies and restart PM2
+# 2. Update Backend dependencies, run database migrations, and restart PM2
 echo "[*] Updating backend dependencies and reloading service..."
 cd backend
 npm install --production=false
+node database/migrate.js || true
 pm2 reload ecosystem.config.cjs || pm2 start ecosystem.config.cjs --env production
 
 # 3. Rebuild Frontend bundle

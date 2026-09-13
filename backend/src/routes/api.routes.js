@@ -42,7 +42,9 @@ import {
   createSalesOrder,
   getInvoices,
   createInvoice,
-  getCustomers
+  getCustomers,
+  getBookerLocations,
+  updateBookerLocation
 } from '../controllers/sales.controller.js';
 import {
   getChartOfAccounts,
@@ -122,12 +124,14 @@ router.post('/pos/shift/close', closeShift);
 router.post('/pos/checkout', checkout);
 router.get('/pos/transactions', getTransactions);
 
-// Sales & CRM & Field Order Booking
+// Sales & CRM & Field Order Booking & GPS Tracking
 router.get('/sales/orders', getSalesOrders);
 router.post('/sales/orders', createSalesOrder);
 router.get('/sales/invoices', getInvoices);
 router.post('/sales/invoices', createInvoice);
 router.get('/sales/customers', getCustomers);
+router.get('/sales/booker/locations', getBookerLocations);
+router.post('/sales/booker/location', updateBookerLocation);
 
 // Double-Entry Accounting
 router.get('/accounting/accounts', getChartOfAccounts);
