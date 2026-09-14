@@ -2160,3 +2160,32 @@ textarea:-webkit-autofill {
   }
 }
 
+/* Custom Scrollbar for ERP Tables & Modals */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.35);
+  border-radius: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.7);
+}
+
+/* Invoice Builder Modal Polish */
+.invoice-item-row {
+  transition: background 0.15s ease;
+}
+.invoice-item-row:hover {
+  background: rgba(56, 189, 248, 0.05) !important;
+}
+.invoice-item-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+
