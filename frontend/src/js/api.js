@@ -98,7 +98,7 @@ export class RealtimeClient {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('[Realtime] WebSocket connected to ApexERP stream');
+        console.log('[Realtime] WebSocket connected to Bin Ishaq Softs stream');
         document.getElementById('ws-status-indicator')?.classList.add('online');
       };
 

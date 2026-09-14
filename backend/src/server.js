@@ -32,7 +32,20 @@ const wsClients = new Set();
 
 wss.on('connection', (ws) => {
   wsClients.add(ws);
-  ws.send(JSON.stringify({ type: 'CONNECTED', message: 'ApexERP Realtime Sync Stream Connected' }));
+  // Send initial handshake
+  ws.send(JSON.stringify({ type: 'CONNECTED', message: 'Bin Ishaq Softs Realtime Sync Stream Connected' }));
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      // Echo or broadcast if necessary
+      if (data.type === 'PING') {
+        ws.send(JSON.stringify({ type: 'PONG', timestamp: new Date().toISOString() }));
+      }
+    } catch (e) {
+      console.error('[WS] Parse error:', e.message);
+    }
+  });
 
   ws.on('close', () => {
     wsClients.delete(ws);
@@ -52,7 +65,7 @@ export function broadcastEvent(event, payload) {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
-    system: 'ApexERP & POS Enterprise',
+    system: 'Bin Ishaq Softs Enterprise Suite',
     version: '1.0.0',
     postgres_connected: isPostgresActive(),
     timestamp: new Date().toISOString()
@@ -74,10 +87,10 @@ app.get('*', (req, res, next) => {
       res.status(200).send(`
         <!DOCTYPE html>
         <html>
-          <head><title>ApexERP & POS API Service</title><style>body{font-family:sans-serif;background:#0f172a;color:#f8fafc;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;}</style></head>
+          <head><title>Bin Ishaq Softs Enterprise Service</title><style>body{font-family:sans-serif;background:#0f172a;color:#f8fafc;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;}</style></head>
           <body>
             <div style="text-align:center;padding:2rem;background:#1e293b;border-radius:12px;border:1px solid #334155;max-width:500px">
-              <h2 style="color:#38bdf8;margin-top:0">ApexERP & POS Backend API</h2>
+              <h2 style="color:#38bdf8;margin-top:0">Bin Ishaq Softs Backend API</h2>
               <p>Status: <strong style="color:#4ade80">ONLINE & READY</strong></p>
               <p>PostgreSQL Support: <strong>Enabled</strong></p>
               <p>API Endpoint: <code><a href="/api/health" style="color:#60a5fa">/api/health</a></code></p>
@@ -111,10 +124,9 @@ server.on('error', (err) => {
 // Bootstrap Server & Database
 server.listen(PORT, async () => {
   console.log('====================================================');
-  console.log(`  ApexERP & POS Enterprise Service`);
+  console.log(`  Bin Ishaq Softs Enterprise Suite`);
   console.log(`  Listening on HTTP & WS Port: ${PORT}`);
   console.log(`  Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('====================================================');
   await initDb();
 });
-

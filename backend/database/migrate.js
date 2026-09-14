@@ -57,7 +57,7 @@ async function ensureDatabaseExists() {
 
 async function runMigration() {
   console.log('====================================================');
-  console.log('  ApexERP & POS - PostgreSQL Database Migration');
+  console.log('  Bin Ishaq Softs - PostgreSQL Database Migration');
   console.log('====================================================');
   console.log(`Target: ${pgUser}@${pgHost}:${pgPort}/${targetDb}`);
 

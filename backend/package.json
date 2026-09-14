@@ -1,7 +1,7 @@
 {
   "name": "apexerppos-backend",
   "version": "1.0.0",
-  "description": "ApexERP & POS Enterprise - Full-stack Node.js & PostgreSQL Backend",
+  "description": "Bin Ishaq Softs Enterprise Suite - Full-stack Node.js & PostgreSQL Backend",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
@@ -18,7 +18,7 @@
     "aapanel",
     "pwa"
   ],
-  "author": "ApexERP Engineering",
+  "author": "Bin Ishaq Softs Engineering",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
